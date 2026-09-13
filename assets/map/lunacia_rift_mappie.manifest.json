@@ -1,0 +1,12 @@
+{
+  "primary": "lunacia_rift_mappie.png",
+  "fallback_plate": "lunacia_rift.png",
+  "tile": 16,
+  "cols": 94,
+  "rows": 50,
+  "width": 1504,
+  "height": 800,
+  "source": "Aseprite-Mappie paint + layer composite",
+  "seed": 77,
+  "retired_stub": "lunacia_rift_tileset_stub.png"
+}

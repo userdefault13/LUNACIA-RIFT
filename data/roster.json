@@ -1,0 +1,1622 @@
+{
+  "version": 2,
+  "axieCoreNote": "Bring Your Own Axie (BYOA): Round 1 uses a mock starter trio. Round 2 will plug real Axie Core ownership.",
+  "starters": [
+    {
+      "id": "buba",
+      "name": "Buba",
+      "class": "Plant",
+      "speciesId": "plant",
+      "role": "hold",
+      "color": "#3d9e4a",
+      "stats": {
+        "hp": 650,
+        "atk": 40,
+        "armor": 9,
+        "speed": 95,
+        "atkRange": 55,
+        "atkCooldown": 1.05
+      },
+      "genes": {
+        "eyes": {
+          "id": "seed-gaze",
+          "name": "Seed Gaze",
+          "desc": "+5% last-hit gold on Packs.",
+          "slot": "eyes",
+          "effects": {
+            "lastHitGold": 0.05
+          }
+        },
+        "ears": {
+          "id": "bud-ears",
+          "name": "Bud Ears",
+          "desc": "+8 Sanctuary HP regen/sec.",
+          "slot": "ears",
+          "effects": {
+            "sanctuaryRegen": 8
+          }
+        },
+        "mouth": {
+          "id": "leaf-bite",
+          "name": "Leaf Bite",
+          "desc": "Short melee cone \u2014 solid damage, slight heal on hit.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "wooden-stake",
+          "name": "Wooden Stake",
+          "desc": "Poke \u2014 damage and brief slow on the target.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "pumpkin-shell",
+          "name": "Pumpkin Shell",
+          "desc": "Self shield absorb for a few seconds.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "carrot-slam",
+          "name": "Carrot Slam",
+          "desc": "Small AoE slam around Buba \u2014 damages packs and heroes.",
+          "slot": "tail",
+          "key": "R"
+        }
+      },
+      "parts": {
+        "eyes": {
+          "id": "seed-gaze",
+          "name": "Seed Gaze",
+          "desc": "+5% last-hit gold on Packs.",
+          "slot": "eyes",
+          "effects": {
+            "lastHitGold": 0.05
+          }
+        },
+        "ears": {
+          "id": "bud-ears",
+          "name": "Bud Ears",
+          "desc": "+8 Sanctuary HP regen/sec.",
+          "slot": "ears",
+          "effects": {
+            "sanctuaryRegen": 8
+          }
+        },
+        "mouth": {
+          "id": "leaf-bite",
+          "name": "Leaf Bite",
+          "desc": "Short melee cone \u2014 solid damage, slight heal on hit.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "wooden-stake",
+          "name": "Wooden Stake",
+          "desc": "Poke \u2014 damage and brief slow on the target.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "pumpkin-shell",
+          "name": "Pumpkin Shell",
+          "desc": "Self shield absorb for a few seconds.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "carrot-slam",
+          "name": "Carrot Slam",
+          "desc": "Small AoE slam around Buba \u2014 damages packs and heroes.",
+          "slot": "tail",
+          "key": "R"
+        }
+      },
+      "sprite": "assets/axies/buba.png"
+    },
+    {
+      "id": "olek",
+      "name": "Olek",
+      "class": "Beast",
+      "speciesId": "beast",
+      "role": "tempo",
+      "color": "#c45a1a",
+      "stats": {
+        "hp": 530,
+        "atk": 54,
+        "armor": 4,
+        "speed": 122,
+        "atkRange": 50,
+        "atkCooldown": 0.82
+      },
+      "genes": {
+        "eyes": {
+          "id": "predator-eyes",
+          "name": "Predator Eyes",
+          "desc": "+5% move speed when chasing an enemy.",
+          "slot": "eyes",
+          "effects": {
+            "chaseSpeed": 0.05
+          }
+        },
+        "ears": {
+          "id": "alert-ears",
+          "name": "Alert Ears",
+          "desc": "+40 aggro / engage range for AI.",
+          "slot": "ears",
+          "effects": {
+            "aggroRange": 40
+          }
+        },
+        "mouth": {
+          "id": "hungry-snap",
+          "name": "Hungry Snap",
+          "desc": "Fast bite \u2014 damage plus short self attack haste.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "ram-horn",
+          "name": "Ram Horn",
+          "desc": "Dash forward in facing direction; damage on contact.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "fur-mantle",
+          "name": "Fur Mantle",
+          "desc": "Brief move-speed buff.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "whip-lash",
+          "name": "Whip Lash",
+          "desc": "Cleave arc in front \u2014 multi-target damage.",
+          "slot": "tail",
+          "key": "R"
+        }
+      },
+      "parts": {
+        "eyes": {
+          "id": "predator-eyes",
+          "name": "Predator Eyes",
+          "desc": "+5% move speed when chasing an enemy.",
+          "slot": "eyes",
+          "effects": {
+            "chaseSpeed": 0.05
+          }
+        },
+        "ears": {
+          "id": "alert-ears",
+          "name": "Alert Ears",
+          "desc": "+40 aggro / engage range for AI.",
+          "slot": "ears",
+          "effects": {
+            "aggroRange": 40
+          }
+        },
+        "mouth": {
+          "id": "hungry-snap",
+          "name": "Hungry Snap",
+          "desc": "Fast bite \u2014 damage plus short self attack haste.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "ram-horn",
+          "name": "Ram Horn",
+          "desc": "Dash forward in facing direction; damage on contact.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "fur-mantle",
+          "name": "Fur Mantle",
+          "desc": "Brief move-speed buff.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "whip-lash",
+          "name": "Whip Lash",
+          "desc": "Cleave arc in front \u2014 multi-target damage.",
+          "slot": "tail",
+          "key": "R"
+        }
+      },
+      "sprite": "assets/axies/olek.png"
+    },
+    {
+      "id": "puffy",
+      "name": "Puffy",
+      "class": "Aquatic",
+      "speciesId": "aquatic",
+      "role": "finish",
+      "color": "#2a7ec4",
+      "stats": {
+        "hp": 470,
+        "atk": 60,
+        "armor": 3,
+        "speed": 112,
+        "atkRange": 95,
+        "atkCooldown": 0.92
+      },
+      "genes": {
+        "eyes": {
+          "id": "clear-eyes",
+          "name": "Clear Eyes",
+          "desc": "+5% damage vs targets below 40% HP.",
+          "slot": "eyes",
+          "effects": {
+            "executeBonus": 0.05
+          }
+        },
+        "ears": {
+          "id": "fin-ears",
+          "name": "Fin Ears",
+          "desc": "+6 attack range.",
+          "slot": "ears",
+          "effects": {
+            "atkRange": 6
+          }
+        },
+        "mouth": {
+          "id": "bubble-kiss",
+          "name": "Bubble Kiss",
+          "desc": "Ranged bubble projectile toward facing / nearest foe.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "coral-spike",
+          "name": "Coral Spike",
+          "desc": "Piercing poke \u2014 damage and temporary armor shred.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "scale-veil",
+          "name": "Scale Veil",
+          "desc": "Take 30% less damage for a short time.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "tidal-finish",
+          "name": "Tidal Finish",
+          "desc": "Execute strike \u2014 big damage; bonus if target below ~40% HP.",
+          "slot": "tail",
+          "key": "R"
+        }
+      },
+      "parts": {
+        "eyes": {
+          "id": "clear-eyes",
+          "name": "Clear Eyes",
+          "desc": "+5% damage vs targets below 40% HP.",
+          "slot": "eyes",
+          "effects": {
+            "executeBonus": 0.05
+          }
+        },
+        "ears": {
+          "id": "fin-ears",
+          "name": "Fin Ears",
+          "desc": "+6 attack range.",
+          "slot": "ears",
+          "effects": {
+            "atkRange": 6
+          }
+        },
+        "mouth": {
+          "id": "bubble-kiss",
+          "name": "Bubble Kiss",
+          "desc": "Ranged bubble projectile toward facing / nearest foe.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "coral-spike",
+          "name": "Coral Spike",
+          "desc": "Piercing poke \u2014 damage and temporary armor shred.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "scale-veil",
+          "name": "Scale Veil",
+          "desc": "Take 30% less damage for a short time.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "tidal-finish",
+          "name": "Tidal Finish",
+          "desc": "Execute strike \u2014 big damage; bonus if target below ~40% HP.",
+          "slot": "tail",
+          "key": "R"
+        }
+      },
+      "sprite": "assets/axies/puffy.png"
+    }
+  ],
+  "classTriangle": {
+    "_comment": "Prefer advantages matrix (attacker \u2192 defender \u2192 mult). Primary Plant>Beast>Aquatic \u00b115%; secondary Bird>Bug>Reptile \u00b112%; tertiary Dawn>Dusk>Mech \u00b112%; cross \u00b18%. Legacy strongVs/weakVs + modifier kept as fallback.",
+    "modifier": 0.15,
+    "advantages": {
+      "Plant": {
+        "Beast": 1.15,
+        "Aquatic": 0.85,
+        "Reptile": 1.08,
+        "Dusk": 1.08
+      },
+      "Beast": {
+        "Aquatic": 1.15,
+        "Plant": 0.85,
+        "Bug": 1.08
+      },
+      "Aquatic": {
+        "Plant": 1.15,
+        "Beast": 0.85,
+        "Bird": 1.08
+      },
+      "Bird": {
+        "Bug": 1.12,
+        "Reptile": 0.88
+      },
+      "Bug": {
+        "Reptile": 1.12,
+        "Bird": 0.88
+      },
+      "Reptile": {
+        "Bird": 1.12,
+        "Bug": 0.88
+      },
+      "Dawn": {
+        "Dusk": 1.12,
+        "Mech": 1.08
+      },
+      "Dusk": {
+        "Mech": 1.12,
+        "Dawn": 0.88
+      },
+      "Mech": {
+        "Dawn": 1.12,
+        "Dusk": 0.88
+      }
+    },
+    "Plant": {
+      "strongVs": "Beast",
+      "weakVs": "Aquatic"
+    },
+    "Beast": {
+      "strongVs": "Aquatic",
+      "weakVs": "Plant"
+    },
+    "Aquatic": {
+      "strongVs": "Plant",
+      "weakVs": "Beast"
+    }
+  },
+  "shop": [
+    {
+      "id": "boots",
+      "name": "Boots",
+      "cost": 100,
+      "desc": "+28 move speed",
+      "stat": "speed",
+      "value": 28
+    },
+    {
+      "id": "vial",
+      "name": "Vial",
+      "cost": 95,
+      "desc": "+120 max HP",
+      "stat": "hp",
+      "value": 120
+    },
+    {
+      "id": "relic",
+      "name": "Relic",
+      "cost": 125,
+      "desc": "Haste: -18% attack cooldown",
+      "stat": "haste",
+      "value": 0.18
+    }
+  ],
+  "species": [
+    {
+      "id": "plant",
+      "name": "Plant",
+      "color": "#3d9e4a",
+      "sprite": "assets/axies/plant.png",
+      "axieId": "2000001",
+      "aliasOf": "buba",
+      "role": "hold",
+      "stats": {
+        "hp": 1.25,
+        "atk": 0.85,
+        "armor": 4,
+        "speed": 0.85
+      },
+      "trait": {
+        "id": "thick-hide",
+        "name": "Thick Hide",
+        "desc": "Tank wave \u2014 high HP / mid armor; shrugs off Pack trades.",
+        "effects": {
+          "armorBonus": 0
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "leaf-eyes",
+          "name": "Leaf Eyes",
+          "desc": "Steady gaze.",
+          "slot": "eyes"
+        },
+        "ears": {
+          "id": "leaf-ears",
+          "name": "Leaf Ears",
+          "desc": "Rooted awareness.",
+          "slot": "ears"
+        },
+        "mouth": {
+          "id": "leaf-mouth",
+          "name": "Leaf Bite",
+          "desc": "Melee nibble.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "leaf-horn",
+          "name": "Wooden Stake",
+          "desc": "Poke.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "leaf-back",
+          "name": "Pumpkin Shell",
+          "desc": "Shell.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "leaf-tail",
+          "name": "Carrot Slam",
+          "desc": "Slam.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "aquatic",
+      "name": "Aquatic",
+      "color": "#2a7ec4",
+      "sprite": "assets/axies/aquatic.png",
+      "axieId": "1000001",
+      "aliasOf": "puffy",
+      "role": "finish",
+      "stats": {
+        "hp": 0.9,
+        "atk": 1.1,
+        "armor": 1,
+        "speed": 1.0
+      },
+      "trait": {
+        "id": "torrent",
+        "name": "Torrent",
+        "desc": "Poke / finish \u2014 +5% damage vs targets below 40% HP.",
+        "effects": {
+          "executeBonus": 0.05
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "fin-eyes",
+          "name": "Clear Eyes",
+          "desc": "Execute sense.",
+          "slot": "eyes",
+          "effects": {
+            "executeBonus": 0.05
+          }
+        },
+        "ears": {
+          "id": "fin-ears-p",
+          "name": "Fin Ears",
+          "desc": "Range.",
+          "slot": "ears",
+          "effects": {
+            "atkRange": 4
+          }
+        },
+        "mouth": {
+          "id": "bubble-mouth",
+          "name": "Bubble Kiss",
+          "desc": "Poke.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "coral-horn",
+          "name": "Coral Spike",
+          "desc": "Pierce.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "scale-back",
+          "name": "Scale Veil",
+          "desc": "Veil.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "tidal-tail",
+          "name": "Tidal Finish",
+          "desc": "Execute.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "beast",
+      "name": "Beast",
+      "color": "#c45a1a",
+      "sprite": "assets/axies/beast.png",
+      "axieId": "2000003",
+      "aliasOf": "olek",
+      "role": "tempo",
+      "stats": {
+        "hp": 1.0,
+        "atk": 1.2,
+        "armor": 1,
+        "speed": 1.15
+      },
+      "trait": {
+        "id": "frenzy",
+        "name": "Frenzy",
+        "desc": "Shred \u2014 high ATK / fast Packs that chew waves.",
+        "effects": {
+          "atkMul": 1.0
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "beast-eyes",
+          "name": "Predator Eyes",
+          "desc": "Chase.",
+          "slot": "eyes",
+          "effects": {
+            "chaseSpeed": 0.03
+          }
+        },
+        "ears": {
+          "id": "beast-ears",
+          "name": "Alert Ears",
+          "desc": "Aggro.",
+          "slot": "ears",
+          "effects": {
+            "aggroRange": 20
+          }
+        },
+        "mouth": {
+          "id": "snap-mouth",
+          "name": "Hungry Snap",
+          "desc": "Bite.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "ram-horn-p",
+          "name": "Ram Horn",
+          "desc": "Dash.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "fur-back",
+          "name": "Fur Mantle",
+          "desc": "Speed.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "whip-tail",
+          "name": "Whip Lash",
+          "desc": "Cleave.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "bird",
+      "name": "Bird",
+      "color": "#d45a8c",
+      "sprite": "assets/axies/bird.png",
+      "axieId": "69",
+      "role": "skirmish",
+      "stats": {
+        "hp": 0.7,
+        "atk": 1.25,
+        "armor": 0,
+        "speed": 1.35
+      },
+      "trait": {
+        "id": "gale",
+        "name": "Gale",
+        "desc": "Glass cannon \u2014 fastest Packs, fragile HP, no armor.",
+        "effects": {
+          "speedMul": 1.0
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "bird-eyes",
+          "name": "Sky Eyes",
+          "desc": "Keen.",
+          "slot": "eyes"
+        },
+        "ears": {
+          "id": "bird-ears",
+          "name": "Feather Ears",
+          "desc": "Light.",
+          "slot": "ears"
+        },
+        "mouth": {
+          "id": "bird-mouth",
+          "name": "Peck",
+          "desc": "Peck.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "bird-horn",
+          "name": "Crest",
+          "desc": "Crest.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "bird-back",
+          "name": "Wing Sail",
+          "desc": "Wings.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "bird-tail",
+          "name": "Plume",
+          "desc": "Plume.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "bug",
+      "name": "Bug",
+      "color": "#c9a227",
+      "sprite": "assets/axies/bug.png",
+      "axieId": "12",
+      "role": "disrupt",
+      "stats": {
+        "hp": 0.95,
+        "atk": 1.12,
+        "armor": 1,
+        "speed": 1.05
+      },
+      "trait": {
+        "id": "venom",
+        "name": "Venom",
+        "desc": "Burst \u2014 +8% damage vs targets below 40% HP (poison feel).",
+        "effects": {
+          "poisonDmgPct": 0.08
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "bug-eyes",
+          "name": "Facet Eyes",
+          "desc": "Multi.",
+          "slot": "eyes"
+        },
+        "ears": {
+          "id": "bug-ears",
+          "name": "Antenna",
+          "desc": "Sense.",
+          "slot": "ears"
+        },
+        "mouth": {
+          "id": "bug-mouth",
+          "name": "Mandible",
+          "desc": "Bite.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "bug-horn",
+          "name": "Stinger",
+          "desc": "Sting.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "bug-back",
+          "name": "Carapace",
+          "desc": "Shell.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "bug-tail",
+          "name": "Abdomen",
+          "desc": "Venom.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "reptile",
+      "name": "Reptile",
+      "color": "#7b4fc4",
+      "sprite": "assets/axies/reptile.png",
+      "axieId": "87",
+      "role": "bulwark",
+      "stats": {
+        "hp": 1.2,
+        "atk": 0.95,
+        "armor": 6,
+        "speed": 0.8
+      },
+      "trait": {
+        "id": "scale-wall",
+        "name": "Scale Wall",
+        "desc": "Wall \u2014 high HP / highest natural Pack armor (slow).",
+        "effects": {
+          "armorBonus": 0
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "rep-eyes",
+          "name": "Slit Eyes",
+          "desc": "Cold.",
+          "slot": "eyes"
+        },
+        "ears": {
+          "id": "rep-ears",
+          "name": "Frill Ears",
+          "desc": "Frill.",
+          "slot": "ears"
+        },
+        "mouth": {
+          "id": "rep-mouth",
+          "name": "Gator Bite",
+          "desc": "Bite.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "rep-horn",
+          "name": "Horn Ridge",
+          "desc": "Ridge.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "rep-back",
+          "name": "Scale Plates",
+          "desc": "Plates.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "rep-tail",
+          "name": "Club Tail",
+          "desc": "Club.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "dawn",
+      "name": "Dawn",
+      "color": "#e8d48a",
+      "sprite": "assets/axies/dawn.png",
+      "axieId": "10488",
+      "role": "support",
+      "stats": {
+        "hp": 1.0,
+        "atk": 0.8,
+        "armor": 3,
+        "speed": 1.0
+      },
+      "trait": {
+        "id": "blessing",
+        "name": "Blessing",
+        "desc": "Support \u2014 heals nearby ally Packs (~3 HP/s) and +10% last-hit gold.",
+        "effects": {
+          "packHealNearby": 3,
+          "goldBonus": 0.1
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "dawn-eyes",
+          "name": "Sun Eyes",
+          "desc": "Warm.",
+          "slot": "eyes"
+        },
+        "ears": {
+          "id": "dawn-ears",
+          "name": "Halo Ears",
+          "desc": "Halo.",
+          "slot": "ears"
+        },
+        "mouth": {
+          "id": "dawn-mouth",
+          "name": "Soft Song",
+          "desc": "Song.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "dawn-horn",
+          "name": "Light Horn",
+          "desc": "Light.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "dawn-back",
+          "name": "Radiant Back",
+          "desc": "Glow.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "dawn-tail",
+          "name": "Trail Tail",
+          "desc": "Trail.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "dusk",
+      "name": "Dusk",
+      "color": "#4a5a9e",
+      "sprite": "assets/axies/dusk.png",
+      "axieId": "7792",
+      "role": "sustain",
+      "stats": {
+        "hp": 1.05,
+        "atk": 1.0,
+        "armor": 3,
+        "speed": 1.0
+      },
+      "trait": {
+        "id": "drain",
+        "name": "Drain",
+        "desc": "Sustain \u2014 8% lifesteal on hit.",
+        "effects": {
+          "lifesteal": 0.08
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "dusk-eyes",
+          "name": "Moon Eyes",
+          "desc": "Night.",
+          "slot": "eyes"
+        },
+        "ears": {
+          "id": "dusk-ears",
+          "name": "Shadow Ears",
+          "desc": "Shade.",
+          "slot": "ears"
+        },
+        "mouth": {
+          "id": "dusk-mouth",
+          "name": "Sip",
+          "desc": "Sip.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "dusk-horn",
+          "name": "Crescent",
+          "desc": "Crescent.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "dusk-back",
+          "name": "Night Cloak",
+          "desc": "Cloak.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "dusk-tail",
+          "name": "Gloom Tail",
+          "desc": "Gloom.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "mech",
+      "name": "Mech",
+      "color": "#8a9aa8",
+      "sprite": "assets/axies/mech.png",
+      "axieId": "10437",
+      "role": "siege",
+      "stats": {
+        "hp": 1.2,
+        "atk": 1.0,
+        "armor": 8,
+        "speed": 0.75
+      },
+      "trait": {
+        "id": "siege-plating",
+        "name": "Siege Plating",
+        "desc": "Siege \u2014 +25% damage vs Spires / Nest / Dens; highest armor.",
+        "effects": {
+          "structureBonus": 0.25
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "mech-eyes",
+          "name": "Optic Eyes",
+          "desc": "Scan.",
+          "slot": "eyes"
+        },
+        "ears": {
+          "id": "mech-ears",
+          "name": "Sensor Ears",
+          "desc": "Ping.",
+          "slot": "ears"
+        },
+        "mouth": {
+          "id": "mech-mouth",
+          "name": "Drill Bite",
+          "desc": "Drill.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "mech-horn",
+          "name": "Spike Horn",
+          "desc": "Spike.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "mech-back",
+          "name": "Plate Back",
+          "desc": "Plate.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "mech-tail",
+          "name": "Exhaust Tail",
+          "desc": "Exhaust.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    }
+  ],
+  "packSpecies": [
+    {
+      "id": "plant",
+      "name": "Plant",
+      "color": "#3d9e4a",
+      "sprite": "assets/axies/plant.png",
+      "axieId": "2000001",
+      "aliasOf": "buba",
+      "role": "hold",
+      "stats": {
+        "hp": 1.25,
+        "atk": 0.85,
+        "armor": 4,
+        "speed": 0.85
+      },
+      "trait": {
+        "id": "thick-hide",
+        "name": "Thick Hide",
+        "desc": "Tank wave \u2014 high HP / mid armor; shrugs off Pack trades.",
+        "effects": {
+          "armorBonus": 0
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "leaf-eyes",
+          "name": "Leaf Eyes",
+          "desc": "Steady gaze.",
+          "slot": "eyes"
+        },
+        "ears": {
+          "id": "leaf-ears",
+          "name": "Leaf Ears",
+          "desc": "Rooted awareness.",
+          "slot": "ears"
+        },
+        "mouth": {
+          "id": "leaf-mouth",
+          "name": "Leaf Bite",
+          "desc": "Melee nibble.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "leaf-horn",
+          "name": "Wooden Stake",
+          "desc": "Poke.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "leaf-back",
+          "name": "Pumpkin Shell",
+          "desc": "Shell.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "leaf-tail",
+          "name": "Carrot Slam",
+          "desc": "Slam.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "aquatic",
+      "name": "Aquatic",
+      "color": "#2a7ec4",
+      "sprite": "assets/axies/aquatic.png",
+      "axieId": "1000001",
+      "aliasOf": "puffy",
+      "role": "finish",
+      "stats": {
+        "hp": 0.9,
+        "atk": 1.1,
+        "armor": 1,
+        "speed": 1.0
+      },
+      "trait": {
+        "id": "torrent",
+        "name": "Torrent",
+        "desc": "Poke / finish \u2014 +5% damage vs targets below 40% HP.",
+        "effects": {
+          "executeBonus": 0.05
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "fin-eyes",
+          "name": "Clear Eyes",
+          "desc": "Execute sense.",
+          "slot": "eyes",
+          "effects": {
+            "executeBonus": 0.05
+          }
+        },
+        "ears": {
+          "id": "fin-ears-p",
+          "name": "Fin Ears",
+          "desc": "Range.",
+          "slot": "ears",
+          "effects": {
+            "atkRange": 4
+          }
+        },
+        "mouth": {
+          "id": "bubble-mouth",
+          "name": "Bubble Kiss",
+          "desc": "Poke.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "coral-horn",
+          "name": "Coral Spike",
+          "desc": "Pierce.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "scale-back",
+          "name": "Scale Veil",
+          "desc": "Veil.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "tidal-tail",
+          "name": "Tidal Finish",
+          "desc": "Execute.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "beast",
+      "name": "Beast",
+      "color": "#c45a1a",
+      "sprite": "assets/axies/beast.png",
+      "axieId": "2000003",
+      "aliasOf": "olek",
+      "role": "tempo",
+      "stats": {
+        "hp": 1.0,
+        "atk": 1.2,
+        "armor": 1,
+        "speed": 1.15
+      },
+      "trait": {
+        "id": "frenzy",
+        "name": "Frenzy",
+        "desc": "Shred \u2014 high ATK / fast Packs that chew waves.",
+        "effects": {
+          "atkMul": 1.0
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "beast-eyes",
+          "name": "Predator Eyes",
+          "desc": "Chase.",
+          "slot": "eyes",
+          "effects": {
+            "chaseSpeed": 0.03
+          }
+        },
+        "ears": {
+          "id": "beast-ears",
+          "name": "Alert Ears",
+          "desc": "Aggro.",
+          "slot": "ears",
+          "effects": {
+            "aggroRange": 20
+          }
+        },
+        "mouth": {
+          "id": "snap-mouth",
+          "name": "Hungry Snap",
+          "desc": "Bite.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "ram-horn-p",
+          "name": "Ram Horn",
+          "desc": "Dash.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "fur-back",
+          "name": "Fur Mantle",
+          "desc": "Speed.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "whip-tail",
+          "name": "Whip Lash",
+          "desc": "Cleave.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "bird",
+      "name": "Bird",
+      "color": "#d45a8c",
+      "sprite": "assets/axies/bird.png",
+      "axieId": "69",
+      "role": "skirmish",
+      "stats": {
+        "hp": 0.7,
+        "atk": 1.25,
+        "armor": 0,
+        "speed": 1.35
+      },
+      "trait": {
+        "id": "gale",
+        "name": "Gale",
+        "desc": "Glass cannon \u2014 fastest Packs, fragile HP, no armor.",
+        "effects": {
+          "speedMul": 1.0
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "bird-eyes",
+          "name": "Sky Eyes",
+          "desc": "Keen.",
+          "slot": "eyes"
+        },
+        "ears": {
+          "id": "bird-ears",
+          "name": "Feather Ears",
+          "desc": "Light.",
+          "slot": "ears"
+        },
+        "mouth": {
+          "id": "bird-mouth",
+          "name": "Peck",
+          "desc": "Peck.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "bird-horn",
+          "name": "Crest",
+          "desc": "Crest.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "bird-back",
+          "name": "Wing Sail",
+          "desc": "Wings.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "bird-tail",
+          "name": "Plume",
+          "desc": "Plume.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "bug",
+      "name": "Bug",
+      "color": "#c9a227",
+      "sprite": "assets/axies/bug.png",
+      "axieId": "12",
+      "role": "disrupt",
+      "stats": {
+        "hp": 0.95,
+        "atk": 1.12,
+        "armor": 1,
+        "speed": 1.05
+      },
+      "trait": {
+        "id": "venom",
+        "name": "Venom",
+        "desc": "Burst \u2014 +8% damage vs targets below 40% HP (poison feel).",
+        "effects": {
+          "poisonDmgPct": 0.08
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "bug-eyes",
+          "name": "Facet Eyes",
+          "desc": "Multi.",
+          "slot": "eyes"
+        },
+        "ears": {
+          "id": "bug-ears",
+          "name": "Antenna",
+          "desc": "Sense.",
+          "slot": "ears"
+        },
+        "mouth": {
+          "id": "bug-mouth",
+          "name": "Mandible",
+          "desc": "Bite.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "bug-horn",
+          "name": "Stinger",
+          "desc": "Sting.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "bug-back",
+          "name": "Carapace",
+          "desc": "Shell.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "bug-tail",
+          "name": "Abdomen",
+          "desc": "Venom.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "reptile",
+      "name": "Reptile",
+      "color": "#7b4fc4",
+      "sprite": "assets/axies/reptile.png",
+      "axieId": "87",
+      "role": "bulwark",
+      "stats": {
+        "hp": 1.2,
+        "atk": 0.95,
+        "armor": 6,
+        "speed": 0.8
+      },
+      "trait": {
+        "id": "scale-wall",
+        "name": "Scale Wall",
+        "desc": "Wall \u2014 high HP / highest natural Pack armor (slow).",
+        "effects": {
+          "armorBonus": 0
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "rep-eyes",
+          "name": "Slit Eyes",
+          "desc": "Cold.",
+          "slot": "eyes"
+        },
+        "ears": {
+          "id": "rep-ears",
+          "name": "Frill Ears",
+          "desc": "Frill.",
+          "slot": "ears"
+        },
+        "mouth": {
+          "id": "rep-mouth",
+          "name": "Gator Bite",
+          "desc": "Bite.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "rep-horn",
+          "name": "Horn Ridge",
+          "desc": "Ridge.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "rep-back",
+          "name": "Scale Plates",
+          "desc": "Plates.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "rep-tail",
+          "name": "Club Tail",
+          "desc": "Club.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "dawn",
+      "name": "Dawn",
+      "color": "#e8d48a",
+      "sprite": "assets/axies/dawn.png",
+      "axieId": "10488",
+      "role": "support",
+      "stats": {
+        "hp": 1.0,
+        "atk": 0.8,
+        "armor": 3,
+        "speed": 1.0
+      },
+      "trait": {
+        "id": "blessing",
+        "name": "Blessing",
+        "desc": "Support \u2014 heals nearby ally Packs (~3 HP/s) and +10% last-hit gold.",
+        "effects": {
+          "packHealNearby": 3,
+          "goldBonus": 0.1
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "dawn-eyes",
+          "name": "Sun Eyes",
+          "desc": "Warm.",
+          "slot": "eyes"
+        },
+        "ears": {
+          "id": "dawn-ears",
+          "name": "Halo Ears",
+          "desc": "Halo.",
+          "slot": "ears"
+        },
+        "mouth": {
+          "id": "dawn-mouth",
+          "name": "Soft Song",
+          "desc": "Song.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "dawn-horn",
+          "name": "Light Horn",
+          "desc": "Light.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "dawn-back",
+          "name": "Radiant Back",
+          "desc": "Glow.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "dawn-tail",
+          "name": "Trail Tail",
+          "desc": "Trail.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "dusk",
+      "name": "Dusk",
+      "color": "#4a5a9e",
+      "sprite": "assets/axies/dusk.png",
+      "axieId": "7792",
+      "role": "sustain",
+      "stats": {
+        "hp": 1.05,
+        "atk": 1.0,
+        "armor": 3,
+        "speed": 1.0
+      },
+      "trait": {
+        "id": "drain",
+        "name": "Drain",
+        "desc": "Sustain \u2014 8% lifesteal on hit.",
+        "effects": {
+          "lifesteal": 0.08
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "dusk-eyes",
+          "name": "Moon Eyes",
+          "desc": "Night.",
+          "slot": "eyes"
+        },
+        "ears": {
+          "id": "dusk-ears",
+          "name": "Shadow Ears",
+          "desc": "Shade.",
+          "slot": "ears"
+        },
+        "mouth": {
+          "id": "dusk-mouth",
+          "name": "Sip",
+          "desc": "Sip.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "dusk-horn",
+          "name": "Crescent",
+          "desc": "Crescent.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "dusk-back",
+          "name": "Night Cloak",
+          "desc": "Cloak.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "dusk-tail",
+          "name": "Gloom Tail",
+          "desc": "Gloom.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    },
+    {
+      "id": "mech",
+      "name": "Mech",
+      "color": "#8a9aa8",
+      "sprite": "assets/axies/mech.png",
+      "axieId": "10437",
+      "role": "siege",
+      "stats": {
+        "hp": 1.2,
+        "atk": 1.0,
+        "armor": 8,
+        "speed": 0.75
+      },
+      "trait": {
+        "id": "siege-plating",
+        "name": "Siege Plating",
+        "desc": "Siege \u2014 +25% damage vs Spires / Nest / Dens; highest armor.",
+        "effects": {
+          "structureBonus": 0.25
+        }
+      },
+      "genes": {
+        "eyes": {
+          "id": "mech-eyes",
+          "name": "Optic Eyes",
+          "desc": "Scan.",
+          "slot": "eyes"
+        },
+        "ears": {
+          "id": "mech-ears",
+          "name": "Sensor Ears",
+          "desc": "Ping.",
+          "slot": "ears"
+        },
+        "mouth": {
+          "id": "mech-mouth",
+          "name": "Drill Bite",
+          "desc": "Drill.",
+          "slot": "mouth",
+          "key": "Q"
+        },
+        "horn": {
+          "id": "mech-horn",
+          "name": "Spike Horn",
+          "desc": "Spike.",
+          "slot": "horn",
+          "key": "W"
+        },
+        "back": {
+          "id": "mech-back",
+          "name": "Plate Back",
+          "desc": "Plate.",
+          "slot": "back",
+          "key": "E"
+        },
+        "tail": {
+          "id": "mech-tail",
+          "name": "Exhaust Tail",
+          "desc": "Exhaust.",
+          "slot": "tail",
+          "key": "R"
+        }
+      }
+    }
+  ],
+  "starterClassMap": {
+    "buba": "plant",
+    "olek": "beast",
+    "puffy": "aquatic"
+  }
+}

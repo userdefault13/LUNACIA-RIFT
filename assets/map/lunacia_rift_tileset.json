@@ -1,0 +1,100 @@
+{
+  "source": "lunacia_rift_tileset.aseprite",
+  "tile_width": 16,
+  "tile_height": 16,
+  "columns": 8,
+  "rows": 8,
+  "image": "lunacia_rift_tileset.png",
+  "imagewidth": 128,
+  "imageheight": 128,
+  "legend": {
+    "G": 1,
+    ".": 1,
+    "P": 6,
+    "T": 4,
+    "F": 5,
+    "R": 60,
+    "D": 12,
+    "S": 7,
+    "N": 13
+  },
+  "tiles": [
+    {
+      "id": 1,
+      "index": 1,
+      "x": 0,
+      "y": 0,
+      "role": "grass"
+    },
+    {
+      "id": 4,
+      "index": 4,
+      "x": 3,
+      "y": 0,
+      "role": "forest"
+    },
+    {
+      "id": 5,
+      "index": 5,
+      "x": 4,
+      "y": 0,
+      "role": "forest_dense"
+    },
+    {
+      "id": 6,
+      "index": 6,
+      "x": 5,
+      "y": 0,
+      "role": "path"
+    },
+    {
+      "id": 7,
+      "index": 7,
+      "x": 6,
+      "y": 0,
+      "role": "spire"
+    },
+    {
+      "id": 12,
+      "index": 12,
+      "x": 3,
+      "y": 1,
+      "role": "den"
+    },
+    {
+      "id": 13,
+      "index": 13,
+      "x": 4,
+      "y": 1,
+      "role": "nest"
+    },
+    {
+      "id": 60,
+      "index": 60,
+      "x": 3,
+      "y": 7,
+      "role": "rock"
+    }
+  ],
+  "total_tiles": 64,
+  "style": "lunacia_jungle_hand_authored",
+  "aseprite_export": {
+    "app": "https://www.aseprite.org/",
+    "version": "1.3.17-arm64",
+    "image": "lunacia_rift_tileset.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 128,
+      "h": 128
+    },
+    "scale": "1",
+    "frameTags": [],
+    "layers": [
+      {
+        "name": "Layer",
+        "opacity": 255,
+        "blendMode": "normal"
+      }
+    ]
+  }
+}

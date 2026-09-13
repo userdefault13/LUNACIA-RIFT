@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lunacia Rift — Round 1 Prototype</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="origins-battle">
+  <div id="app">
+    <header>
+      <h1>Lunacia Rift</h1>
+      <div class="meta">
+        <span>Time <strong id="timer">0:00</strong></span>
+        <span class="meta-gold"><span class="origins-energy-badge" aria-hidden="true"></span>Gold <strong id="gold">180g</strong></span>
+        <span id="nest-player-label">Nest locked</span>
+        <span id="nest-enemy-label">Nest locked</span>
+      </div>
+    </header>
+
+    <div id="stage-wrap">
+      <div id="channel"></div>
+      <div id="combat-hud" class="origins-panel" aria-label="Combat vitals">
+        <div id="combat-axies"></div>
+        <div class="combat-nest-row">
+          <span class="combat-nest-label" id="combat-nest-player-label">Your Nest</span>
+          <div class="origins-hp combat-nest-hp">
+            <div class="origins-hp-fill" id="nest-player" style="width:100%"></div>
+          </div>
+        </div>
+        <div class="combat-nest-row enemy">
+          <span class="combat-nest-label" id="combat-nest-enemy-label">Enemy Nest</span>
+          <div class="origins-hp combat-nest-hp enemy">
+            <div class="origins-hp-fill" id="nest-enemy" style="width:100%"></div>
+          </div>
+        </div>
+      </div>
+      <canvas id="game" width="1500" height="800" aria-label="Lunacia Rift battlefield"></canvas>
+      <canvas id="spine-overlay" width="1500" height="800" aria-hidden="true"></canvas>
+      <canvas id="glb-overlay" width="1500" height="800" aria-hidden="true"></canvas>
+      <canvas id="origins-vfx-overlay" width="1500" height="800" aria-hidden="true"></canvas>
+      <div id="overlay">
+        <div class="card origins-card">
+          <img id="overlay-flag" class="overlay-flag hidden" alt="" />
+          <h2 id="overlay-title">Lunacia Rift</h2>
+          <p id="overlay-body">
+            1v1 three-lane micro-MOBA. Command <strong>Buba / Olek / Puffy</strong> — one per lane.
+            Last-hit Packs for gold, push Spires, then crack the <strong>Nest</strong> to win.
+            Nest unlocks after any <strong>two inner (T2) Spires</strong> fall. You vs bot trainer.
+          </p>
+          <p class="hint">Click-to-move · Tab / 1-2-3 select · QWER skills · Shop · Den/Spire when in range · Shift zoom · Z/X/C lane swap at Sanctuary</p>
+          <button id="start-btn" type="button">Start match</button>
+        </div>
+      </div>
+      <div id="den-modal" class="hidden origins-modal" aria-hidden="true">
+        <div class="den-modal-backdrop" data-den-close="1"></div>
+        <div class="den-modal-card origins-card" role="dialog" aria-labelledby="den-modal-title">
+          <button type="button" class="den-modal-close" id="den-modal-x" aria-label="Close">×</button>
+          <h2 id="den-modal-title">Den</h2>
+          <div id="den-modal-body"></div>
+        </div>
+      </div>
+      <div id="spire-modal" class="hidden origins-modal" aria-hidden="true">
+        <div class="den-modal-backdrop" data-spire-close="1"></div>
+        <div class="den-modal-card origins-card" role="dialog" aria-labelledby="spire-modal-title">
+          <button type="button" class="den-modal-close" id="spire-modal-x" aria-label="Close">×</button>
+          <h2 id="spire-modal-title">Spire</h2>
+          <div id="spire-modal-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="hud" class="origins-hud">
+      <div class="panel panel-axies">
+        <h2>Your Axies</h2>
+        <div id="axie-select"></div>
+      </div>
+
+      <div class="panel panel-lanes">
+        <h2>Lane / Cam</h2>
+        <div class="lane-row">
+          <button class="axie-btn" id="lane-top" type="button">→ Top</button>
+          <button class="axie-btn" id="lane-mid" type="button">→ Mid</button>
+          <button class="axie-btn" id="lane-bot" type="button">→ Bot</button>
+        </div>
+        <button class="zoom-hold-btn" id="zoom-out-btn" type="button" title="Hold Shift or this button">Zoom out (Shift)</button>
+        <p class="hint">Sanctuary: Z/X/C · Den / Spire click</p>
+      </div>
+
+      <div class="panel panel-skills">
+        <h2>Genes (QWER)</h2>
+        <div id="skills"></div>
+        <p class="hint" id="passives"></p>
+        <p class="hint class-chart" id="class-chart" title="9-class advantage map">Plant &gt; Beast &gt; Aquatic · Bird &gt; Bug &gt; Reptile · Dawn &gt; Dusk &gt; Mech</p>
+      </div>
+
+      <div class="panel panel-shop">
+        <h2>Shop</h2>
+        <div id="shop-list"></div>
+      </div>
+
+      <div class="panel panel-log">
+        <h2>Combat log</h2>
+        <div id="log"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./node_modules/three/build/three.module.js",
+      "three/addons/": "./node_modules/three/examples/jsm/"
+    }
+  }
+  </script>
+  <script>
+    // Spine Mixer spike OFF by default (sample genes looked wrong). Opt-in: ?spine=1
+    window.USE_SPINE_HEROES = (function () {
+      try {
+        const q = new URLSearchParams(location.search);
+        if (q.get('spine') === '1' || q.get('spine') === 'true') return true;
+      } catch (e) { /* */ }
+      return false;
+    })();
+    // Three.js GLB kit-mascot heroes OFF by default (CDN PNGs). Opt-in: ?glb=1
+    window.USE_GLB_HEROES = (function () {
+      try {
+        const q = new URLSearchParams(location.search);
+        const v = q.get('glb');
+        if (v === '1' || v === 'true' || v === 'on') return true;
+        if (v === '0' || v === 'false' || v === 'off') return false;
+      } catch (e) { /* */ }
+      return false;
+    })();
+  </script>
+  <script src="js/tilemap.js"></script>
+  <script src="js/game.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

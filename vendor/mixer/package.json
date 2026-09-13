@@ -1,0 +1,54 @@
+{
+  "name": "@axieinfinity/mixer",
+  "version": "1.4.9",
+  "description": "Axie Infinity Mixer",
+  "license": "MIT",
+  "author": "Axie Infinity Engineering Team",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "axie",
+    "infinity",
+    "axie-infinity",
+    "mixer",
+    "axie-mixer",
+    "axie-infinity-mixer",
+    "ronin",
+    "javascript",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:axieinfinity/fe-common-libs.git",
+    "directory": "packages/mixer"
+  },
+  "scripts": {
+    "build": "rm -rf dist && rollup -c",
+    "dev": "yarn run build --watch",
+    "lint": "eslint . --ext .js,.tsx,.ts",
+    "lint:fix": "eslint .  --ext .js,.tsx,.ts --fix"
+  },
+  "dependencies": {
+    "bn.js": "5.2.1",
+    "buffer": "6.0.3"
+  },
+  "devDependencies": {
+    "@rollup/plugin-json": "^6.0.1",
+    "@types/jest": "27.0.2",
+    "eslint": "8.22.0",
+    "eslint-config-prettier": "8.5.0",
+    "eslint-plugin-import": "2.26.0",
+    "eslint-plugin-prettier": "4.2.1",
+    "eslint-plugin-simple-import-sort": "8.0.0",
+    "jest": "27.2.1",
+    "rimraf": "3.0.2",
+    "rollup-plugin-copy": "3.5.0",
+    "ts-jest": "27.0.5",
+    "tsconfig": "*",
+    "typescript": "4.8.4"
+  }
+}

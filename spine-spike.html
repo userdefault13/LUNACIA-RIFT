@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lunacia Rift — Spine spike proof</title>
+  <style>
+    body { margin: 0; background: #1a2a1c; color: #e8eef5; font-family: system-ui, sans-serif; }
+    #hud { padding: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    button { padding: 8px 14px; border-radius: 8px; border: 0; background: #646cff; color: #fff; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #status { opacity: 0.85; }
+    #pixi-wrap { width: 800px; height: 500px; margin: 0 auto; border: 2px solid #3a4f6a; border-radius: 8px; overflow: hidden; }
+    canvas { display: block; width: 100%; height: 100%; }
+    .err { color: #ff8a8a; }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <strong>Spine spike proof</strong>
+    <button id="atk-melee" disabled>Attack melee</button>
+    <button id="atk-ranged" disabled>Attack ranged</button>
+    <span id="status">Loading Mixer…</span>
+  </div>
+  <div id="pixi-wrap"><canvas id="pixi-canvas"></canvas></div>
+  <script type="module">
+    import { Application, Assets } from 'https://esm.sh/pixi.js@7.2.4';
+    import { Spine, TextureAtlas } from 'https://esm.sh/pixi-spine@4.0.3?deps=pixi.js@7.2.4';
+    import { AtlasAttachmentLoader, SkeletonJson } from 'https://esm.sh/@pixi-spine/runtime-3.8@4.0.3';
+    import {
+      initAxieMixer,
+      getAxieSpineFromGenes,
+      getAxieColorPartShift,
+      getVariantAttachmentPath,
+    } from 'https://esm.sh/@axieinfinity/mixer@1.4.9';
+
+    const status = document.getElementById('status');
+    const SAMPLE_GENES =
+      '0x20000000000003000181a09082040000000100040800800400000090086044020001000010008002000100100840450200010004186044020001001008808404';
+    const AXIE_IMAGES_URL = 'https://axiecdn.axieinfinity.com/mixer-stuffs/v6/';
+    const ANIM = {
+      idle: 'action/idle/normal',
+      melee: 'attack/melee/tail-smash',
+      ranged: 'attack/ranged/cast-fly',
+    };
+
+    async function loadJson(path) {
+      const r = await fetch(path);
+      if (!r.ok) throw new Error('json ' + path);
+      return r.json();
+    }
+
+    try {
+      const base = 'vendor/mixer/dist/data';
+      const [GenesData, SamplesData, VariantsData, AnimationsData] = await Promise.all([
+        loadJson(base + '/axie-2d-v3-stuff-genes.json'),
+        loadJson(base + '/axie-2d-v3-stuff-samples.json'),
+        loadJson(base + '/axie-2d-v3-stuff-variant.json'),
+        loadJson(base + '/axie-2d-v3-stuff-animations.json'),
+      ]);
+      initAxieMixer(GenesData, SamplesData, VariantsData, AnimationsData);
+
+      const app = new Application({
+        view: document.getElementById('pixi-canvas'),
+        width: 800,
+        height: 500,
+        backgroundColor: 0x1a2a1c,
+        resolution: window.devicePixelRatio || 1,
+        autoDensity: true,
+      });
+
+      const built = getAxieSpineFromGenes(SAMPLE_GENES, new Map(), false);
+      if (!built.skeletonDataAsset) throw new Error('no skeleton');
+
+      const skinAttachments = built.skeletonDataAsset.skins[0].attachments;
+      const partColorShift = getAxieColorPartShift(built.variant);
+      const resources = [];
+      for (const slotName in skinAttachments) {
+        for (const attachmentName in skinAttachments[slotName]) {
+          const p = skinAttachments[slotName][attachmentName].path;
+          resources.push({
+            key: p,
+            imagePath: AXIE_IMAGES_URL + getVariantAttachmentPath(slotName, p, built.variant, partColorShift),
+          });
+        }
+      }
+
+      status.textContent = 'Loading ' + resources.length + ' textures…';
+      const allTextures = {};
+      for (const res of resources) {
+        try {
+          allTextures[res.key] = await Assets.load(res.imagePath);
+        } catch (e) {
+          console.warn('miss', res.key);
+        }
+      }
+
+      const spineAtlas = new TextureAtlas();
+      spineAtlas.addTextureHash(allTextures, false);
+      const spineData = new SkeletonJson(new AtlasAttachmentLoader(spineAtlas)).readSkeletonData(built.skeletonDataAsset);
+      const axie = new Spine(spineData);
+      axie.position.set(400, 360);
+      axie.scale.set(0.35);
+      axie.state.setAnimation(0, ANIM.idle, true);
+      app.stage.addChild(axie);
+
+      const meleeBtn = document.getElementById('atk-melee');
+      const rangedBtn = document.getElementById('atk-ranged');
+      meleeBtn.disabled = false;
+      rangedBtn.disabled = false;
+      meleeBtn.onclick = () => {
+        axie.state.setAnimation(0, ANIM.melee, false);
+        axie.state.addAnimation(0, ANIM.idle, true, 0);
+      };
+      rangedBtn.onclick = () => {
+        axie.state.setAnimation(0, ANIM.ranged, false);
+        axie.state.addAnimation(0, ANIM.idle, true, 0);
+      };
+
+      status.textContent = 'Ready — sample genes. Anims: ' + ANIM.melee + ' / ' + ANIM.ranged;
+      document.body.dataset.spineReady = '1';
+      document.title = 'SPINE_READY';
+      // Auto-play melee once for headless proof screenshots
+      setTimeout(() => {
+        axie.state.setAnimation(0, ANIM.melee, false);
+        axie.state.addAnimation(0, ANIM.idle, true, 0);
+        document.body.dataset.spineAttacked = '1';
+      }, 400);
+    } catch (err) {
+      console.error(err);
+      status.className = 'err';
+      status.textContent = 'Failed: ' + (err && err.message ? err.message : err);
+      document.body.dataset.spineReady = '0';
+      document.title = 'SPINE_FAIL';
+    }
+  </script>
+</body>
+</html>

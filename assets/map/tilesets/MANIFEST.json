@@ -1,0 +1,69 @@
+{
+  "tilesets": {
+    "grass": {
+      "image": "tilesets/grass.png",
+      "tilewidth": 16,
+      "tileheight": 16,
+      "columns": 11,
+      "imagewidth": 176,
+      "imageheight": 832,
+      "tilecount": 572
+    },
+    "trees": {
+      "image": "tilesets/trees.png",
+      "tilewidth": 16,
+      "tileheight": 16,
+      "columns": 7,
+      "imagewidth": 112,
+      "imageheight": 80,
+      "tilecount": 35
+    },
+    "dirt": {
+      "image": "tilesets/dirt.png",
+      "tilewidth": 16,
+      "tileheight": 16,
+      "columns": 8,
+      "imagewidth": 128,
+      "imageheight": 128,
+      "tilecount": 64
+    },
+    "hills": {
+      "image": "tilesets/hills.png",
+      "tilewidth": 16,
+      "tileheight": 16,
+      "columns": 9,
+      "imagewidth": 144,
+      "imageheight": 829,
+      "tilecount": 459
+    },
+    "shorelines": {
+      "image": "tilesets/shorelines.png",
+      "tilewidth": 16,
+      "tileheight": 16,
+      "imagewidth": 80,
+      "imageheight": 144,
+      "columns": 5,
+      "tilecount": 45
+    },
+    "water": {
+      "image": "tilesets/water.png",
+      "tilewidth": 16,
+      "tileheight": 16,
+      "imagewidth": 128,
+      "imageheight": 16,
+      "columns": 8,
+      "tilecount": 8
+    },
+    "lakesrivers": {
+      "image": "tilesets/lakesrivers.png",
+      "tilewidth": 16,
+      "tileheight": 16,
+      "imagewidth": 176,
+      "imageheight": 432,
+      "columns": 11,
+      "tilecount": 297
+    }
+  },
+  "source": "Aseprite-Mappie/examples",
+  "note": "Original Mappie art \u2014 not the quick 8-tile lunacia sheet"
+}

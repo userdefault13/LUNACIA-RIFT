@@ -1,0 +1,23 @@
+{
+  "name": "lunacia-rift",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "static": "python3 -m http.server 8765"
+  },
+  "dependencies": {
+    "@axieinfinity/mixer": "1.4.9",
+    "@pixi-spine/runtime-3.8": "4.0.3",
+    "colyseus.js": "^0.15.28",
+    "pixi-spine": "4.0.3",
+    "pixi.js": "7.2.4",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "vite": "5.4.11"
+  }
+}
