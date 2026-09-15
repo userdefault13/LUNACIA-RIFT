@@ -514,7 +514,18 @@ const SHOP_STATUS_ICON = {
     const game = window.LunaciaRift.createGame(roster, canvas, ui, gameContract);
 
     // CPU vs CPU spectator demo (?cpu=1): rewrite overlay + auto-start shortly after boot
-    if (window.USE_CPU_VS_CPU) {
+    const cpuDemo = (function () {
+      try {
+        if (window.USE_CPU_VS_CPU) return true;
+        const q = new URLSearchParams(location.search);
+        const v = q.get('cpu');
+        if (v === '1' || v === 'true' || v === 'on') return true;
+        const d = q.get('demo');
+        if (d === 'cpu' || d === 'cpu-vs-cpu') return true;
+      } catch (e) { /* */ }
+      return false;
+    })();
+    if (cpuDemo) {
       const title = $('#overlay-title');
       const body = $('#overlay-body');
       const hint = overlay && overlay.querySelector('.hint');

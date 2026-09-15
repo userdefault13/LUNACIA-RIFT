@@ -459,7 +459,17 @@
       packTimer: 2,
       gold: 200,
       enemyGold: 190,
-      cpuVsCpu: !!(typeof global !== 'undefined' && global.USE_CPU_VS_CPU),
+      cpuVsCpu: (function () {
+        try {
+          if (typeof global !== 'undefined' && global.USE_CPU_VS_CPU) return true;
+          const q = new URLSearchParams(location.search);
+          const v = q.get('cpu');
+          if (v === '1' || v === 'true' || v === 'on') return true;
+          const d = q.get('demo');
+          if (d === 'cpu' || d === 'cpu-vs-cpu') return true;
+        } catch (e) { /* */ }
+        return false;
+      })(),
       log: [],
       selectedIdx: 0,
       channel: null, // { axie, lane, t, dur }
