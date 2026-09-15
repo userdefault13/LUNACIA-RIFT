@@ -459,6 +459,7 @@
       packTimer: 2,
       gold: 200,
       enemyGold: 190,
+      cpuVsCpu: !!(typeof global !== 'undefined' && global.USE_CPU_VS_CPU),
       log: [],
       selectedIdx: 0,
       channel: null, // { axie, lane, t, dur }
@@ -641,7 +642,9 @@
       const e = makeAxie(def, 'enemy', lane, i);
       state.axies.push(p, e);
     });
-    state.axies.filter((a) => a.team === 'player')[0].controlled = true;
+    if (!state.cpuVsCpu) {
+      state.axies.filter((a) => a.team === 'player')[0].controlled = true;
+    }
 
     // Default Den Pack class = lane Axie's class id (starters map buba→plant, olek→beast, puffy→aquatic)
     state.structures.filter((s) => s.type === 'den').forEach((den) => {
@@ -877,7 +880,7 @@
         tryHeroLevelUp(attacker);
         target.respawnAt = state.t + 8;
         log(`${target.name} (${target.team}) down — respawn 8s`);
-        if (target.team === 'player' && target.controlled) {
+        if (target.team === 'player' && (target.controlled || (state.cpuVsCpu && target.slot === state.selectedIdx))) {
           const corpse = { x: target.x, y: target.y };
           const pals = playerAxies();
           const alt = pals.find((a) => a.alive && a !== target);
@@ -1342,8 +1345,8 @@
     function castSkill(axie, key) {
       if (!state.running || state.ended) return false;
       if (!axie || !axie.alive) return false;
-      // Player may only cast on the selected (controlled) Axie; bot casts freely
-      if (axie.team === 'player' && !axie.controlled) return false;
+      // Player may only cast on the selected (controlled) Axie; bots / CPU-vs-CPU cast freely
+      if (axie.team === 'player' && !axie.controlled && !state.cpuVsCpu) return false;
       const sk = axie.skills[key];
       if (!sk || sk.cd > 0) return false;
       sk.cd = sk.max;
@@ -1638,16 +1641,18 @@
       // Manual / Tab selects cancel corpse linger (death re-sets linger after this call)
       state.camCorpsePos = null;
       state.camCorpseUntil = 0;
-      pals.forEach((a) => { a.controlled = false; });
       state.selectedIdx = idx;
       const ax = pals[idx];
-      ax.controlled = true;
-      if (ax.alive) {
-        ax.targetX = ax.x;
-        ax.targetY = ax.y;
+      if (!state.cpuVsCpu) {
+        pals.forEach((a) => { a.controlled = false; });
+        ax.controlled = true;
+        if (ax.alive) {
+          ax.targetX = ax.x;
+          ax.targetY = ax.y;
+        }
+        state.channel = null;
+        if (ui.setChannel) ui.setChannel(false);
       }
-      state.channel = null;
-      if (ui.setChannel) ui.setChannel(false);
       if (ui.renderAxies) ui.renderAxies(state);
       if (ui.renderSkills) ui.renderSkills(ax);
       if (ui.renderShop) ui.renderShop(state);
@@ -1924,6 +1929,33 @@
       }
     }
 
+    function playerShopAI() {
+      if (!state.cpuVsCpu) return;
+      const pals = state.axies.filter((a) => a.team === 'player' && a.alive);
+      for (const ax of pals) {
+        for (const item of state.shop) {
+          if (!ax.items[item.id] && state.gold >= item.cost) {
+            state.gold -= item.cost;
+            ax.items[item.id] = true;
+            applyItemStats(ax);
+            break;
+          }
+        }
+      }
+      if (!state._playerDenUpgradeDone && state.t >= 55 && state.gold >= DEN_UPGRADE_COST[0]) {
+        const dens = state.structures.filter(
+          (s) => s.type === 'den' && s.team === 'player' && s.alive && s.level < DEN_MAX_LEVEL
+        );
+        if (dens.length) {
+          dens.sort((a, b) => a.level - b.level);
+          if (upgradeDen(dens[0].lane, 'player')) {
+            state._playerDenUpgradeDone = true;
+            log(`Blue upgraded their ${dens[0].lane} Den`);
+          }
+        }
+      }
+    }
+
     function respawnCheck() {
       for (const a of state.axies) {
         if (!a.alive && state.t >= a.respawnAt) {
@@ -2007,9 +2039,12 @@
       for (const p of living(state.packs)) updatePack(p, dt);
       state.packs = state.packs.filter((p) => p.alive);
 
-      // Enemy bot: occasionally cast when off CD and foe in range (E is self-buff)
+      // Bot / CPU: occasionally cast when off CD and foe in range (E is self-buff)
       if (Math.random() < dt * 0.14) {
-        const bots = living(state.axies).filter((a) => a.team === 'enemy');
+        const teamFilter = state.cpuVsCpu
+          ? ((a) => a.team === 'enemy' || a.team === 'player')
+          : ((a) => a.team === 'enemy');
+        const bots = living(state.axies).filter(teamFilter);
         const ax = bots[Math.floor(Math.random() * bots.length)];
         if (ax) {
           const ready = ['Q', 'W', 'E', 'R'].filter((k) => ax.skills[k].cd <= 0);
@@ -2024,6 +2059,15 @@
       if (Math.floor(state.t) % 20 === 0 && state._shopTick !== Math.floor(state.t)) {
         state._shopTick = Math.floor(state.t);
         enemyShopAI();
+        playerShopAI();
+      }
+      // CPU demo: cycle camera across blue Axies every ~8s
+      if (state.cpuVsCpu) {
+        const tick = Math.floor(state.t);
+        if (tick > 0 && tick % 8 === 0 && state._cpuCamTick !== tick) {
+          state._cpuCamTick = tick;
+          cycleAxie();
+        }
       }
 
       state.fx.forEach((f) => {
@@ -2579,6 +2623,7 @@
 
     function onClick(ev) {
       if (!state.running || state.ended) return;
+      if (state.cpuVsCpu) return; // spectator — AI drives both teams
       if (ui.isDenModalOpen && ui.isDenModalOpen()) return;
       if (ui.isSpireModalOpen && ui.isSpireModalOpen()) return;
       const world = screenToWorld(ev.clientX, ev.clientY);
@@ -2614,6 +2659,8 @@
       if (k === '1') selectAxie(0);
       if (k === '2') selectAxie(1);
       if (k === '3') selectAxie(2);
+      // CPU vs CPU: camera select only — no human skills / lane swaps
+      if (state.cpuVsCpu) return;
       const ax = selected();
       if (!ax) return;
       const up = k.toUpperCase();
@@ -2636,7 +2683,9 @@
       state.running = true;
       state.ended = false;
       spawnPackWave();
-      log('Match start — command your Axies. Destroy two inner Spires to expose the Nest.');
+      log(state.cpuVsCpu
+        ? 'CPU vs CPU demo — both teams AI. Destroy two inner Spires to expose the Nest.'
+        : 'Match start — command your Axies. Destroy two inner Spires to expose the Nest.');
       if (ui.renderAxies) ui.renderAxies(state);
       if (ui.renderSkills) ui.renderSkills(selected());
       if (ui.renderShop) ui.renderShop(state);

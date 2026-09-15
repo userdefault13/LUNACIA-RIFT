@@ -2,7 +2,7 @@
 
 **Pitch:** 1v1 three-lane war where you command three of your own Axies, one per lane, and end the fight at the enemy Nest.
 
-Axie Infinity Vibeathon entry. Local draft pending push to Origin repo `user0xdef-ult/LUNACIA-RIFT`.
+Axie Infinity Vibeathon entry. GitHub: [userdefault13/LUNACIA-RIFT](https://github.com/userdefault13/LUNACIA-RIFT).
 
 ## Axie Core / BYOA
 
@@ -18,6 +18,8 @@ cd ~/Dev/lunacia-rift && python3 -m http.server 8765
 ```
 
 Open **http://localhost:8765** — hard-refresh if you already had a tab open.
+
+**CPU vs CPU demo (judges / clips):** **http://localhost:8765/?cpu=1** (alias `?demo=cpu`). Both teams run on the lane AI — auto-starts after ~1s. Default URL stays human vs bot.
 
 Do **not** open `index.html` as `file://` (fetch for `data/roster.json` / map JSON will fail).
 

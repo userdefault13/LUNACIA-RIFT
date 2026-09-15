@@ -133,6 +133,17 @@
       } catch (e) { /* */ }
       return false;
     })();
+    // CPU vs CPU spectator demo. Opt-in: ?cpu=1 (alias ?demo=cpu)
+    window.USE_CPU_VS_CPU = (function () {
+      try {
+        const q = new URLSearchParams(location.search);
+        const v = q.get('cpu');
+        if (v === '1' || v === 'true' || v === 'on') return true;
+        const d = q.get('demo');
+        if (d === 'cpu' || d === 'cpu-vs-cpu') return true;
+      } catch (e) { /* */ }
+      return false;
+    })();
   </script>
   <script src="js/tilemap.js"></script>
   <script src="js/game.js"></script>

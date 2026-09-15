@@ -5,7 +5,6 @@
 import { attachSpineHeroes } from './spineHeroes.js';
 import { attachOriginsVfx } from './originsVfx.js';
 import { attachGlbHeroes } from './glbHeroes.js';
-import { createNet, resolveEndpoint, DEFAULT_ENDPOINT } from './net.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -513,6 +512,26 @@ const SHOP_STATUS_ICON = {
     }
     const game = window.LunaciaRift.createGame(roster, canvas, ui, gameContract);
 
+    // CPU vs CPU spectator demo (?cpu=1): rewrite overlay + auto-start shortly after boot
+    if (window.USE_CPU_VS_CPU) {
+      const title = $('#overlay-title');
+      const body = $('#overlay-body');
+      const hint = overlay && overlay.querySelector('.hint');
+      const btn = $('#start-btn');
+      if (title) title.textContent = 'Lunacia Rift — CPU vs CPU';
+      if (body) {
+        body.innerHTML = 'Spectator demo: <strong>both teams are AI</strong> (same lane brain as the bot trainer). Watch Nest takes, Pack waves, and QWER casts — no click-to-move needed.';
+      }
+      if (hint) hint.textContent = 'Tab / 1-2-3 cycle camera · Shift zoom · Auto-starts in a moment';
+      if (btn) btn.textContent = 'Watch match';
+      setTimeout(() => {
+        if (game.state.running || game.state.ended) return;
+        overlay.classList.add('hidden');
+        game.start();
+      }, 900);
+    }
+
+
     // Origins Battle Kit browser VFX (additive atlas overlay; no Pixi)
     try {
       attachOriginsVfx(game, canvas).catch((err) => {
@@ -572,258 +591,12 @@ const SHOP_STATUS_ICON = {
       console.warn('[LunaciaRift] Spine spike failed — Canvas heroes remain', err);
     }
 
-
-    // --- Multiplayer (Colyseus lunacia_rift) ---
-    const net = createNet();
-    let mpMode = 'solo';
-    let snapshotTimer = null;
-    let localReady = false;
-    let mpMatchStarted = false;
-
-    const mpEndpointLabel = $('#mp-endpoint-label');
-    if (mpEndpointLabel) mpEndpointLabel.textContent = resolveEndpoint() || DEFAULT_ENDPOINT;
-
-    function setMpError(msg) {
-      const el = $('#mp-error');
-      if (!el) return;
-      if (!msg) {
-        el.classList.add('hidden');
-        el.textContent = '';
-        return;
-      }
-      el.classList.remove('hidden');
-      el.textContent = msg;
-    }
-
-    function setMode(mode) {
-      mpMode = mode === 'mp' ? 'mp' : 'solo';
-      const soloBtn = $('#mode-solo');
-      const mpBtn = $('#mode-mp');
-      if (soloBtn) soloBtn.classList.toggle('active', mpMode === 'solo');
-      if (mpBtn) mpBtn.classList.toggle('active', mpMode === 'mp');
-      const soloPanel = $('#solo-panel');
-      const mpPanel = $('#mp-panel');
-      if (soloPanel) soloPanel.classList.toggle('hidden', mpMode !== 'solo');
-      if (mpPanel) mpPanel.classList.toggle('hidden', mpMode !== 'mp');
-      setMpError('');
-    }
-
-    function renderMpPlayers(detail) {
-      const list = $('#mp-players');
-      const status = $('#mp-status');
-      const inviteEl = $('#mp-invite-code');
-      const startBtn = $('#mp-start');
-      const readyBtn = $('#mp-ready');
-      if (inviteEl && detail.inviteCode) inviteEl.textContent = detail.inviteCode;
-      const players = detail.players || [];
-      if (list) {
-        list.innerHTML = players.map((p) => {
-          const you = p.sessionId === net.sessionId ? ' (you)' : '';
-          const host = detail.isHost && p.sessionId === net.sessionId ? ' · host' : '';
-          const ready = p.isReady
-            ? '<span class="ready-yes">Ready</span>'
-            : '<span class="ready-no">Not ready</span>';
-          return `<li><span><span class="side-tag">${escapeHtml(p.side || '?')}</span> ${escapeHtml(p.displayName || 'Player')}${you}${host}</span>${ready}</li>`;
-        }).join('');
-      }
-      if (status) {
-        status.textContent = `Phase: ${detail.phase || net.phase} · ${players.length}/2 players · side ${detail.side || net.side || '—'}`;
-      }
-      if (startBtn) {
-        const show = !!(detail.isHost || net.isHost) && (detail.phase || net.phase) === 'lobby';
-        startBtn.classList.toggle('hidden', !show);
-      }
-      if (readyBtn && (detail.phase || net.phase) === 'lobby') {
-        readyBtn.textContent = localReady ? 'Unready' : 'Ready';
-      }
-    }
-
-    function clearSnapshotTimer() {
-      if (snapshotTimer) {
-        clearInterval(snapshotTimer);
-        snapshotTimer = null;
-      }
-    }
-
-    function beginMultiplayerMatch() {
-      if (mpMatchStarted) return;
-      mpMatchStarted = true;
-      clearSnapshotTimer();
-      overlay.classList.add('hidden');
-      overlay.classList.remove('end-victory', 'end-defeat');
-      const flag = $('#overlay-flag');
-      if (flag) {
-        flag.classList.add('hidden');
-        flag.removeAttribute('src');
-      }
-      game.setMultiplayer({
-        enabled: true,
-        isHost: net.isHost,
-        side: net.side,
-        disableEnemyAI: true,
-        onLocalCmd: (payload) => { net.sendCmd(payload); },
-        onMatchEndLocal: (winnerTeam) => {
-          if (!net.isHost) return;
-          // Mirrored: local player win → this session won
-          const winnerSessionId = winnerTeam === 'player' ? net.sessionId : '';
-          net.matchEnd({
-            winnerSessionId,
-            endReason: 'nest_destroyed',
-          });
-        },
-      });
-      game.start();
-      // Optional host snapshot every ~200ms (enemy correction on guest)
-      if (net.isHost) {
-        snapshotTimer = setInterval(() => {
-          if (!net.multiplayer || net.phase !== 'playing') return;
-          try { net.sendSnapshot(game.getSnapshot()); } catch (e) { /* */ }
-        }, 200);
-      }
-    }
-
-    net.setCallbacks({
-      onPlayers: (detail) => {
-        const lobby = $('#mp-lobby');
-        if (lobby) lobby.classList.remove('hidden');
-        renderMpPlayers(detail || {});
-      },
-      onPhase: (detail) => {
-        renderMpPlayers(detail || {});
-        if (detail && detail.phase === 'playing') beginMultiplayerMatch();
-      },
-      onMatchStarted: () => { beginMultiplayerMatch(); },
-      onCmd: (envelope) => {
-        if (!envelope || !envelope.payload) return;
-        game.applyRemoteCmd(envelope.payload);
-      },
-      onSnapshot: (payload) => {
-        if (net.isHost) return;
-        game.applySnapshot(payload);
-      },
-      onMatchEnded: (info) => {
-        clearSnapshotTimer();
-        if (game.state.ended) return;
-        const won = info && info.winnerSessionId && info.winnerSessionId === net.sessionId;
-        game.state.ended = true;
-        game.state.running = false;
-        game.state.winner = won ? 'player' : 'enemy';
-        if (ui.showEnd) ui.showEnd(game.state.winner);
-      },
-      onError: (err) => {
-        setMpError((err && err.message) || String(err));
-      },
-      onConnection: (ok) => {
-        if (!ok && mpMode === 'mp' && !game.state.running) {
-          setMpError('Disconnected from room');
-        }
-      },
-    });
-
-    async function mpCreate() {
-      setMpError('');
-      const name = (($('#mp-name') && $('#mp-name').value) || 'Host').trim() || 'Host';
-      localReady = false;
-      mpMatchStarted = false;
-      try {
-        await net.createRoom({ displayName: name });
-        const lobby = $('#mp-lobby');
-        if (lobby) lobby.classList.remove('hidden');
-        renderMpPlayers({
-          players: net.players,
-          inviteCode: net.inviteCode,
-          phase: net.phase,
-          isHost: net.isHost,
-          side: net.side,
-        });
-      } catch (err) {
-        setMpError((err && err.message) || String(err));
-      }
-    }
-
-    async function mpJoin() {
-      setMpError('');
-      const name = (($('#mp-name') && $('#mp-name').value) || 'Guest').trim() || 'Guest';
-      const code = (($('#mp-code') && $('#mp-code').value) || '').trim();
-      localReady = false;
-      mpMatchStarted = false;
-      try {
-        await net.joinRoom({ inviteCode: code, displayName: name });
-        const lobby = $('#mp-lobby');
-        if (lobby) lobby.classList.remove('hidden');
-        renderMpPlayers({
-          players: net.players,
-          inviteCode: net.inviteCode,
-          phase: net.phase,
-          isHost: net.isHost,
-          side: net.side,
-        });
-      } catch (err) {
-        setMpError((err && err.message) || String(err));
-      }
-    }
-
-    function mpToggleReady() {
-      localReady = !localReady;
-      net.setReady(localReady);
-      const readyBtn = $('#mp-ready');
-      if (readyBtn) readyBtn.textContent = localReady ? 'Unready' : 'Ready';
-    }
-
-    async function mpLeave() {
-      clearSnapshotTimer();
-      if (net.phase === 'playing') net.forfeit();
-      await net.leave();
-      localReady = false;
-      mpMatchStarted = false;
-      game.setMultiplayer({ enabled: false, disableEnemyAI: false, onLocalCmd: null, onMatchEndLocal: null });
-      const lobby = $('#mp-lobby');
-      if (lobby) lobby.classList.add('hidden');
-      setMpError('');
-    }
-
-    const modeSolo = $('#mode-solo');
-    const modeMp = $('#mode-mp');
-    if (modeSolo) modeSolo.addEventListener('click', () => setMode('solo'));
-    if (modeMp) modeMp.addEventListener('click', () => setMode('mp'));
-    const mpCreateBtn = $('#mp-create');
-    const mpJoinBtn = $('#mp-join');
-    const mpReadyBtn = $('#mp-ready');
-    const mpStartBtn = $('#mp-start');
-    const mpLeaveBtn = $('#mp-leave');
-    const mpCopyBtn = $('#mp-copy');
-    if (mpCreateBtn) mpCreateBtn.addEventListener('click', () => { mpCreate(); });
-    if (mpJoinBtn) mpJoinBtn.addEventListener('click', () => { mpJoin(); });
-    if (mpReadyBtn) mpReadyBtn.addEventListener('click', () => { mpToggleReady(); });
-    if (mpStartBtn) mpStartBtn.addEventListener('click', () => { net.startMatch(); });
-    if (mpLeaveBtn) mpLeaveBtn.addEventListener('click', () => { mpLeave(); });
-    if (mpCopyBtn) {
-      mpCopyBtn.addEventListener('click', async () => {
-        const code = net.inviteCode || (($('#mp-invite-code') && $('#mp-invite-code').textContent) || '');
-        try {
-          await navigator.clipboard.writeText(code);
-          mpCopyBtn.textContent = 'Copied';
-          setTimeout(() => { mpCopyBtn.textContent = 'Copy'; }, 1200);
-        } catch (e) {
-          setMpError('Copy failed — select the code manually');
-        }
-      });
-    }
-
-    window.addEventListener('beforeunload', () => {
-      if (net.multiplayer && net.phase === 'playing') {
-        try { net.forfeit(); } catch (e) { /* */ }
-      }
-    });
-
     $('#start-btn').addEventListener('click', () => {
       // Full reload keeps prototype simple for rematch
       if (game.state.ended) {
         location.reload();
         return;
       }
-      // Solo path only
-      game.setMultiplayer({ enabled: false, disableEnemyAI: false, onLocalCmd: null, onMatchEndLocal: null });
       overlay.classList.add('hidden');
       overlay.classList.remove('end-victory', 'end-defeat');
       const flag = $('#overlay-flag');
