@@ -1042,3 +1042,151 @@ body.origins-battle #stage-wrap {
 #mp-error.hidden,
 #mp-start.hidden,
 #solo-panel.hidden { display: none !important; }
+
+/* Thumbnail HUD — still readable after ~0.43× (1500×800 → 640×360).
+   Wide camera is js/game.js wideFraming / ZOOM_OUT. */
+body.origins-battle header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+  padding: 10px 48px 0;
+  background: transparent;
+}
+body.origins-battle header h1 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 6px;
+  opacity: 0.8;
+  text-shadow: 0 1px 2px #000;
+}
+.match-readout {
+  justify-self: center;
+  display: flex;
+  gap: 12px;
+  pointer-events: none;
+  z-index: 21;
+}
+.readout-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 168px;
+  height: 58px;
+  padding: 0 14px;
+  background: rgba(8, 10, 14, 0.92);
+  border: 3px solid #e8c46a;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 4px 0 #000;
+}
+.readout-chip .readout-k {
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d7c49a;
+}
+.readout-chip strong {
+  font-size: 32px;
+  color: #ffe08a;
+  font-variant-numeric: tabular-nums;
+}
+body.origins-battle header .meta {
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 16px;
+  color: #f2e6c9;
+  text-shadow: 0 1px 2px #000;
+}
+
+.side-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #fff;
+  pointer-events: none;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+}
+.side-you {
+  left: 0;
+  background: #1a6cff;
+}
+.side-enemy {
+  right: 0;
+  background: #e23a2c;
+  transform: rotate(180deg);
+}
+
+#hud.origins-hud {
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 60px 12px;
+  background: linear-gradient(0deg, rgba(6, 8, 12, 0.72) 0%, rgba(6, 8, 12, 0.2) 70%, transparent 100%);
+}
+#hud.origins-hud .panel-skills {
+  flex: 0 0 auto;
+  max-width: none;
+  min-width: 540px;
+  order: 2;
+  padding: 8px 10px 8px;
+}
+#hud.origins-hud .panel-axies,
+#hud.origins-hud .panel-lanes,
+#hud.origins-hud .panel-shop,
+#hud.origins-hud .panel-log {
+  flex: 0 1 150px;
+  max-width: 170px;
+  max-height: 108px;
+  overflow: hidden;
+}
+#hud.origins-hud .panel-skills h2 {
+  font-size: 14px;
+  margin-bottom: 6px;
+  padding: 4px 8px;
+}
+#hud.origins-hud #skills {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(72px, 1fr));
+  gap: 8px;
+}
+#hud.origins-hud #skills .skill,
+#hud.origins-hud #skills .skill.origins-skill {
+  min-width: 84px;
+  min-height: 84px;
+  padding: 6px 4px 4px;
+  gap: 2px;
+}
+#hud.origins-hud #skills .skill .key {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffd27a;
+}
+#hud.origins-hud #skills .skill .skill-name {
+  font-size: 15px;
+  font-weight: 700;
+  max-width: 110px;
+  color: #fff;
+}
+#hud.origins-hud #skills .skill .skill-cd {
+  font-size: 14px;
+  font-weight: 700;
+}
+#hud.origins-hud #skills .skill .skill-icon {
+  width: 22px;
+  height: 22px;
+}

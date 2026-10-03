@@ -10,15 +10,20 @@
   <div id="app">
     <header>
       <h1>Lunacia Rift</h1>
+      <div id="match-readout" class="match-readout" aria-label="Match status">
+        <span class="readout-chip"><span class="readout-k">Time</span> <strong id="timer">0:00</strong></span>
+        <span class="readout-chip readout-gold"><span class="origins-energy-badge" aria-hidden="true"></span><span class="readout-k">Gold</span> <strong id="gold">180g</strong></span>
+        <span class="readout-chip"><span class="readout-k">Lv</span> <strong id="axie-level">1</strong></span>
+      </div>
       <div class="meta">
-        <span>Time <strong id="timer">0:00</strong></span>
-        <span class="meta-gold"><span class="origins-energy-badge" aria-hidden="true"></span>Gold <strong id="gold">180g</strong></span>
         <span id="nest-player-label">Nest locked</span>
         <span id="nest-enemy-label">Nest locked</span>
       </div>
     </header>
 
     <div id="stage-wrap">
+      <div class="side-marker side-you" aria-hidden="true">YOU</div>
+      <div class="side-marker side-enemy" aria-hidden="true">ENEMY</div>
       <div id="channel"></div>
       <div id="combat-hud" class="origins-panel" aria-label="Combat vitals">
         <div id="combat-axies"></div>
@@ -83,7 +88,7 @@
           <button class="axie-btn" id="lane-mid" type="button">→ Mid</button>
           <button class="axie-btn" id="lane-bot" type="button">→ Bot</button>
         </div>
-        <button class="zoom-hold-btn" id="zoom-out-btn" type="button" title="Hold Shift or this button">Zoom out (Shift)</button>
+        <button class="zoom-hold-btn" id="zoom-out-btn" type="button" title="Hold to zoom in on the selected Axie">Zoom in (Shift)</button>
         <p class="hint">Sanctuary: Z/X/C · Den / Spire click</p>
       </div>
 

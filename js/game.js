@@ -481,9 +481,10 @@
       projectiles: [],
       fx: [],
       keys: Object.create(null),
-      // Camera: soft-follow selected Axie; hold Shift / HUD to zoom out
+      // Camera: wide three-lane arena by default (thumbnail + match start).
+      // zoomOutHeld is the historical flag: true = hold Shift / button to zoom IN.
       zoomOutHeld: false,
-      cam: { x: W / 2, y: H / 2, zoom: ZOOM_IN },
+      cam: { x: W / 2, y: H / 2, zoom: ZOOM_OUT },
       camCorpseUntil: 0,
       camCorpsePos: null,
     };
@@ -1992,12 +1993,17 @@
       return { x: W / 2, y: H / 2 };
     }
 
+    function wideFraming() {
+      return !state.zoomOutHeld;
+    }
+
     function updateCamera(dt) {
-      const targetZoom = state.zoomOutHeld ? ZOOM_OUT : ZOOM_IN;
+      const wide = wideFraming();
+      const targetZoom = wide ? ZOOM_OUT : ZOOM_IN;
       const zAlpha = 1 - Math.exp(-ZOOM_LERP * dt);
       state.cam.zoom += (targetZoom - state.cam.zoom) * zAlpha;
 
-      const focus = cameraFocus();
+      const focus = wide ? { x: W / 2, y: H / 2 } : cameraFocus();
       const fAlpha = 1 - Math.exp(-CAM_FOLLOW * dt);
       state.cam.x += (focus.x - state.cam.x) * fAlpha;
       state.cam.y += (focus.y - state.cam.y) * fAlpha;
@@ -2157,9 +2163,10 @@
         ctx.lineWidth = 3;
         ctx.stroke();
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 11px sans-serif';
+        const nestPx = Math.max(11, Math.round(22 / Math.max(state.cam.zoom, 0.01)));
+        ctx.font = `800 ${nestPx}px sans-serif`;
         ctx.textAlign = 'center';
-        ctx.fillText('NEST', s.x, s.y + 4);
+        ctx.fillText('NEST', s.x, s.y + nestPx * 0.35);
         if (!s.unlocked) {
           ctx.fillStyle = '#aaa';
           ctx.font = '9px sans-serif';
@@ -2464,12 +2471,13 @@
         }
         return false;
       };
+      const wideBoard = wideFraming();
       for (const p of living(state.packs)) {
-        if (p.team === 'enemy' && !seen(p.x, p.y)) continue;
+        if (!wideBoard && p.team === 'enemy' && !seen(p.x, p.y)) continue;
         drawPack(p);
       }
       for (const a of living(state.axies)) {
-        if (a.team === 'enemy' && !seen(a.x, a.y)) continue;
+        if (!wideBoard && a.team === 'enemy' && !seen(a.x, a.y)) continue;
         drawAxie(a);
       }
 
@@ -2580,17 +2588,17 @@
         ctx.globalAlpha = 1;
       }
 
-      // Fog of War overlay (world space, under camera transform)
-      drawFogOfWar(visions);
+      // Fog only while zoomed in. Wide framing keeps both Nests and Packs readable.
+      if (!wideBoard) drawFogOfWar(visions);
 
-      // minimap-ish labels
-      ctx.fillStyle = 'rgba(200,220,200,0.5)';
-      ctx.font = '11px sans-serif';
-      ctx.textAlign = 'left';
-      const labelX = W / 2 - 12;
-      ctx.fillText('TOP', labelX, LANE_Y.top - 36);
-      ctx.fillText('MID', labelX, LANE_Y.mid - 36);
-      ctx.fillText('BOT', labelX, LANE_Y.bot - 36);
+      // Lane tags sized in screen px so they survive a ~0.43× thumbnail.
+      const lanePx = Math.max(14, Math.round(26 / Math.max(state.cam.zoom, 0.01)));
+      ctx.fillStyle = 'rgba(232, 240, 232, 0.92)';
+      ctx.font = `800 ${lanePx}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('TOP', W / 2, LANE_Y.top - 28);
+      ctx.fillText('MID', W / 2, LANE_Y.mid - 28);
+      ctx.fillText('BOT', W / 2, LANE_Y.bot - 28);
 
       ctx.restore();
     }
@@ -2709,15 +2717,10 @@
     window.addEventListener('blur', onBlur);
     requestAnimationFrame(loop);
 
-    // Seed camera on first selected Axie
-    {
-      const ax = selected();
-      if (ax) {
-        state.cam.x = ax.x;
-        state.cam.y = ax.y;
-        state.cam.zoom = ZOOM_IN;
-      }
-    }
+    // Match opens on the full three-lane board (both Nests in frame).
+    state.cam.x = W / 2;
+    state.cam.y = H / 2;
+    state.cam.zoom = ZOOM_OUT;
 
     return {
       state,

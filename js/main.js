@@ -5,7 +5,6 @@
 import { attachSpineHeroes } from './spineHeroes.js';
 import { attachOriginsVfx } from './originsVfx.js';
 import { attachGlbHeroes } from './glbHeroes.js';
-import { createNet, resolveEndpoint, DEFAULT_ENDPOINT } from './net.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -55,6 +54,11 @@ const SHOP_STATUS_ICON = {
       renderHud(state) {
         $('#gold').textContent = `${state.gold}g`;
         $('#timer').textContent = fmt(state.t);
+        const lvEl = $('#axie-level');
+        if (lvEl) {
+          const axLv = game.selected();
+          lvEl.textContent = String((axLv && axLv.level) || 1);
+        }
         const pNest = state.structures.find((s) => s.type === 'nest' && s.team === 'player');
         const eNest = state.structures.find((s) => s.type === 'nest' && s.team === 'enemy');
         const pBar = $('#nest-player');
@@ -605,14 +609,39 @@ const SHOP_STATUS_ICON = {
 
 
     // --- Multiplayer (Colyseus lunacia_rift) ---
-    const net = createNet();
+    // Dynamic import so a static server (no bare-specifier resolver) can still boot solo / CPU.
+    let net;
     let mpMode = 'solo';
     let snapshotTimer = null;
     let localReady = false;
     let mpMatchStarted = false;
-
-    const mpEndpointLabel = $('#mp-endpoint-label');
-    if (mpEndpointLabel) mpEndpointLabel.textContent = resolveEndpoint() || DEFAULT_ENDPOINT;
+    try {
+      const netMod = await import('./net.js');
+      net = netMod.createNet();
+      const mpEndpointLabel = $('#mp-endpoint-label');
+      if (mpEndpointLabel) mpEndpointLabel.textContent = netMod.resolveEndpoint() || netMod.DEFAULT_ENDPOINT;
+    } catch (err) {
+      console.warn('[LunaciaRift] multiplayer unavailable — solo / CPU play continues', err);
+      net = {
+        sessionId: null,
+        phase: 'offline',
+        side: null,
+        isHost: false,
+        multiplayer: false,
+        players: [],
+        inviteCode: '',
+        setCallbacks() {},
+        sendCmd() {},
+        sendSnapshot() {},
+        matchEnd() {},
+        createRoom() { return Promise.reject(err); },
+        joinRoom() { return Promise.reject(err); },
+        setReady() {},
+        forfeit() {},
+        leave() { return Promise.resolve(); },
+        startMatch() {},
+      };
+    }
 
     function setMpError(msg) {
       const el = $('#mp-error');
@@ -885,7 +914,7 @@ const SHOP_STATUS_ICON = {
       });
     }
 
-    // Hold-to-zoom-out (pointer + touch); release returns to zoomed-in follow
+    // Hold to zoom in on the selected Axie; release returns to the wide arena
     const zoomBtn = $('#zoom-out-btn');
     if (zoomBtn) {
       const hold = (on) => {
