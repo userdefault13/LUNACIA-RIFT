@@ -1998,7 +1998,7 @@
     }
 
     function updateCamera(dt) {
-      const wide = wideFraming();
+      const wide = state.cpuVsCpu ? true : wideFraming();
       const targetZoom = wide ? ZOOM_OUT : ZOOM_IN;
       const zAlpha = 1 - Math.exp(-ZOOM_LERP * dt);
       state.cam.zoom += (targetZoom - state.cam.zoom) * zAlpha;
