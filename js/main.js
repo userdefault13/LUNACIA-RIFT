@@ -88,7 +88,7 @@ const SHOP_STATUS_ICON = {
             const dead = a.alive ? '' : 'dead';
             const pct = a.maxHp > 0 ? Math.max(0, (a.hp / a.maxHp) * 100) : 0;
             const hpTxt = a.alive ? `${Math.ceil(a.hp)}/${a.maxHp}` : 'DOWN';
-            return `<div class="combat-axie ${sel} ${dead}">
+            return `<div class="combat-axie ${sel} ${dead}" data-idx="${i}" title="Select (${i + 1})">
               <span class="combat-axie-name">${i + 1}. ${escapeHtml(a.name)} Lv${a.level || 1}</span>
               <span class="combat-axie-hpnum">${hpTxt}</span>
               <div class="origins-hp"><div class="origins-hp-fill" style="width:${pct}%"></div></div>
@@ -472,6 +472,8 @@ const SHOP_STATUS_ICON = {
         if (text) channelEl.textContent = text;
       },
       showEnd(winner) {
+        // The CPU match behind the menu screens just ends quietly
+        if (document.body.classList.contains('menu-open')) return;
         ui.closeDenModal();
         ui.closeSpireModal();
         overlay.classList.remove('hidden');
@@ -489,7 +491,7 @@ const SHOP_STATUS_ICON = {
         $('#overlay-body').textContent =
           winner === 'player'
             ? 'You shattered the enemy Nest. Lunacia holds for now.'
-            : 'Your Nest fell. Requeue the trainer and try a sharper last-hit.';
+            : 'Your Nest fell. Run it back and try a sharper last-hit.';
         $('#start-btn').textContent = 'Play again';
       },
     };
@@ -516,6 +518,7 @@ const SHOP_STATUS_ICON = {
       console.warn('[LunaciaRift] game contract skipped', err);
     }
     const game = window.LunaciaRift.createGame(roster, canvas, ui, gameContract);
+    window.__lunaciaGame = game; // console handle for staging screenshots
 
     // CPU vs CPU spectator demo (?cpu=1): rewrite overlay + auto-start shortly after boot
     const cpuDemo = (function () {
@@ -529,7 +532,37 @@ const SHOP_STATUS_ICON = {
       } catch (e) { /* */ }
       return false;
     })();
+    // Vitals rows double as the Axie selector (rows are re-rendered; delegate once).
+    const vitalsBox = $('#combat-axies');
+    if (vitalsBox) {
+      vitalsBox.addEventListener('click', (e) => {
+        const row = e.target.closest('.combat-axie');
+        if (row && row.dataset.idx != null) game.selectAxie(+row.dataset.idx);
+      });
+    }
+    // Reserve the HUD's height under the map so no lane hides behind panels.
+    const hudEl = $('#hud');
+    const hdrEl = document.querySelector('header');
+    if (hudEl && hdrEl && 'ResizeObserver' in window) {
+      const root = document.documentElement.style;
+      const ro = new ResizeObserver(() => {
+        root.setProperty('--hud-h', `${Math.ceil(hudEl.offsetHeight)}px`);
+        root.setProperty('--hdr-h', `${Math.ceil(hdrEl.offsetHeight)}px`);
+      });
+      ro.observe(hudEl);
+      ro.observe(hdrEl);
+    }
+    // H toggles a clean, HUD-free view for screenshots / footage.
+    window.addEventListener('keydown', (e) => {
+      if ((e.key === 'h' || e.key === 'H') && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+        document.body.classList.toggle('hud-hidden');
+      }
+    });
+
     if (cpuDemo) {
+      document.body.classList.add('cpu-demo');
       const title = $('#overlay-title');
       const body = $('#overlay-body');
       const hint = overlay && overlay.querySelector('.hint');
@@ -538,7 +571,7 @@ const SHOP_STATUS_ICON = {
       if (body) {
         body.innerHTML = 'Spectator demo: <strong>both teams are AI</strong> (same lane brain as the bot trainer). Watch Nest takes, Pack waves, and QWER casts — no click-to-move needed.';
       }
-      if (hint) hint.textContent = 'Tab / 1-2-3 cycle camera · Shift zoom · Auto-starts in a moment';
+      if (hint) hint.textContent = 'Tab / 1-2-3 pick Axie · F follow cam · H hide HUD · Auto-starts in a moment';
       if (btn) btn.textContent = 'Watch match';
       setTimeout(() => {
         if (game.state.running || game.state.ended) return;
@@ -643,6 +676,18 @@ const SHOP_STATUS_ICON = {
       };
     }
 
+    window.__lunaciaNet = net; // console handle (debugging online rooms)
+
+    function friendlyNetError(err) {
+      const msg = (err && err.message) || String(err || '');
+      // Socket failures surface as bare Event / ProgressEvent objects with no message
+      if (!msg || msg === '[object Event]' || msg === '[object ProgressEvent]' || /connect|network|websocket/i.test(msg)) {
+        const ep = ($('#mp-endpoint-label') && $('#mp-endpoint-label').textContent) || 'the game server';
+        return `Couldn't reach ${ep}. Check the server address under "Server", or try again in a moment.`;
+      }
+      return msg;
+    }
+
     function setMpError(msg) {
       const el = $('#mp-error');
       if (!el) return;
@@ -710,6 +755,8 @@ const SHOP_STATUS_ICON = {
       mpMatchStarted = true;
       clearSnapshotTimer();
       overlay.classList.add('hidden');
+      document.body.classList.remove('menu-open');
+      $('#frontend').classList.add('hidden');
       overlay.classList.remove('end-victory', 'end-defeat');
       const flag = $('#overlay-flag');
       if (flag) {
@@ -738,7 +785,7 @@ const SHOP_STATUS_ICON = {
         snapshotTimer = setInterval(() => {
           if (!net.multiplayer || net.phase !== 'playing') return;
           try { net.sendSnapshot(game.getSnapshot()); } catch (e) { /* */ }
-        }, 200);
+        }, 66); // ~15/s; the guest eases between snapshots
       }
     }
 
@@ -797,7 +844,7 @@ const SHOP_STATUS_ICON = {
           side: net.side,
         });
       } catch (err) {
-        setMpError((err && err.message) || String(err));
+        setMpError(friendlyNetError(err));
       }
     }
 
@@ -819,7 +866,7 @@ const SHOP_STATUS_ICON = {
           side: net.side,
         });
       } catch (err) {
-        setMpError((err && err.message) || String(err));
+        setMpError(friendlyNetError(err));
       }
     }
 
@@ -836,7 +883,7 @@ const SHOP_STATUS_ICON = {
       await net.leave();
       localReady = false;
       mpMatchStarted = false;
-      game.setMultiplayer({ enabled: false, disableEnemyAI: false, onLocalCmd: null, onMatchEndLocal: null });
+      if (typeof game.setMultiplayer === 'function') game.setMultiplayer({ enabled: false, disableEnemyAI: false, onLocalCmd: null, onMatchEndLocal: null });
       const lobby = $('#mp-lobby');
       if (lobby) lobby.classList.add('hidden');
       setMpError('');
@@ -883,7 +930,7 @@ const SHOP_STATUS_ICON = {
         return;
       }
       // Solo path only
-      game.setMultiplayer({ enabled: false, disableEnemyAI: false, onLocalCmd: null, onMatchEndLocal: null });
+      if (typeof game.setMultiplayer === 'function') game.setMultiplayer({ enabled: false, disableEnemyAI: false, onLocalCmd: null, onMatchEndLocal: null });
       overlay.classList.add('hidden');
       overlay.classList.remove('end-victory', 'end-defeat');
       const flag = $('#overlay-flag');
@@ -893,6 +940,79 @@ const SHOP_STATUS_ICON = {
       }
       game.start();
     });
+
+    // --- Front end: hash router (#/ home · #/how · #/online · #/play · #/watch) ---
+    // Static SPA: no server routes. The board mode (CPU vs human) is fixed at boot (see
+    // index.html USE_CPU_VS_CPU), so crossing between CPU and human routes reloads the page.
+    const frontend = $('#frontend');
+    const MENU_ROUTES = new Set(['home', 'how', 'online']);
+    const CPU_ROUTES = new Set(['home', 'how', 'watch']);
+    function currentRoute() {
+      const r = (location.hash || '').replace(/^#\/?/, '');
+      return ['how', 'online', 'play', 'watch'].includes(r) ? r : 'home';
+    }
+    function showRoute() {
+      const route = currentRoute();
+      const busy = game.state.running || game.state.ended;
+      if (CPU_ROUTES.has(route) !== !!game.state.cpuVsCpu || ((route === 'play' || route === 'online') && busy)) {
+        location.reload();
+        return;
+      }
+      const menu = MENU_ROUTES.has(route);
+      document.body.classList.toggle('menu-open', menu);
+      document.body.classList.toggle('cpu-demo', !!game.state.cpuVsCpu);
+      frontend.classList.toggle('hidden', !menu);
+      frontend.querySelectorAll('.fe-screen').forEach((el) => {
+        el.classList.toggle('active', el.dataset.screen === route);
+      });
+      if (menu) {
+        overlay.classList.add('hidden');
+        ui.closeDenModal();
+        ui.closeSpireModal();
+      }
+      if (route === 'play' && !busy) $('#start-btn').click();
+      if (route === 'watch' && !game.state.running) {
+        overlay.classList.add('hidden');
+        game.start();
+      }
+      if (route !== 'online' && net.room && net.phase === 'lobby') mpLeave();
+    }
+    window.addEventListener('hashchange', showRoute);
+    showRoute();
+
+    // Online screen: remembered name + server address (net.js reads lunacia_mp_endpoint)
+    const nameInput = $('#mp-name');
+    try { nameInput.value = localStorage.getItem('lunacia_mp_name') || ''; } catch (e) { /* */ }
+    nameInput.addEventListener('change', () => {
+      try { localStorage.setItem('lunacia_mp_name', nameInput.value.trim()); } catch (e) { /* */ }
+    });
+    const epInput = $('#mp-endpoint');
+    const epLabel = $('#mp-endpoint-label');
+    function refreshEndpointWarning() {
+      const insecure = location.protocol === 'https:' && (epLabel.textContent || '').startsWith('ws://');
+      $('#mp-insecure').classList.toggle('hidden', !insecure);
+    }
+    epInput.addEventListener('change', () => {
+      let v = epInput.value.trim();
+      if (v.startsWith('https://')) v = 'wss://' + v.slice(8);
+      else if (v.startsWith('http://')) v = 'ws://' + v.slice(7);
+      else if (v && !/^wss?:\/\//.test(v)) v = 'wss://' + v;
+      v = v.replace(/\/$/, '');
+      try {
+        if (v) localStorage.setItem('lunacia_mp_endpoint', v);
+        else localStorage.removeItem('lunacia_mp_endpoint');
+      } catch (e) { /* */ }
+      if (v) {
+        epLabel.textContent = v;
+        refreshEndpointWarning();
+      } else {
+        import('./net.js').then((m) => {
+          epLabel.textContent = m.resolveEndpoint();
+          refreshEndpointWarning();
+        }).catch(() => {});
+      }
+    });
+    refreshEndpointWarning();
 
     $('#lane-top').addEventListener('click', () => game.startLaneChannel('top'));
     $('#lane-mid').addEventListener('click', () => game.startLaneChannel('mid'));
@@ -914,22 +1034,19 @@ const SHOP_STATUS_ICON = {
       });
     }
 
-    // Hold to zoom in on the selected Axie; release returns to the wide arena
+    // Click (or F) locks the camera zoomed on the selected Axie; Shift = hold-to-peek
     const zoomBtn = $('#zoom-out-btn');
     if (zoomBtn) {
-      const hold = (on) => {
-        game.setZoomOutHeld(on);
+      ui.onZoomLock = (on) => {
         zoomBtn.classList.toggle('held', on);
+        zoomBtn.textContent = on ? 'Wide view (F)' : 'Follow hero (F)';
+        zoomBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
       };
-      const down = (ev) => { ev.preventDefault(); hold(true); };
-      const up = (ev) => { ev.preventDefault(); hold(false); };
-      zoomBtn.addEventListener('pointerdown', down);
-      zoomBtn.addEventListener('pointerup', up);
-      zoomBtn.addEventListener('pointerleave', up);
-      zoomBtn.addEventListener('pointercancel', up);
-      zoomBtn.addEventListener('touchstart', down, { passive: false });
-      zoomBtn.addEventListener('touchend', up);
-      zoomBtn.addEventListener('touchcancel', up);
+      zoomBtn.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        game.setZoomLocked(!game.state.zoomLocked);
+        zoomBtn.blur(); // keep Space / keys going to the game
+      });
     }
   }
 

@@ -5,3 +5,6 @@ dist/
 
 # optional local vendor copies
 # vendor/
+
+# Recorded footage lives on YouTube / locally, not in git
+*.mp4

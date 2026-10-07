@@ -8,6 +8,37 @@ Axie Infinity Vibeathon entry. GitHub: [userdefault13/LUNACIA-RIFT](https://gith
 
 Round 1 ships a **mock starter roster** (Buba, Olek, Puffy) so the loop is playable without wallet or ownership checks. The intended Round 2 path is **Bring Your Own Axie (BYOA)** via Axie Core: your real Axies, parts, and class identity drive the same lane roles — hold / tempo / finish — without inventing new creature IP.
 
+## Front end & deploy (Vercel, static)
+
+The game is a static single-page app: no build step and **zero serverless functions**.
+
+| Route | Screen |
+|-------|--------|
+| `#/` | Title screen over a live CPU match: Play vs Bot · Play Online · Watch CPU vs CPU |
+| `#/how` | Rules + controls |
+| `#/online` | Online lobby (create room → share 6-letter code → both Ready) |
+| `#/play` | Solo match vs the bot trainer |
+| `#/watch` | CPU vs CPU spectator (`?cpu=1` still works) |
+
+Deploy: `vercel` (preview) or `vercel --prod` from the repo root. `vercel.json` disables framework detection and the build, and sets cache headers (JS/CSS/JSON revalidate every load; images cache for a week). `.vercelignore` is an allowlist that uploads only what the game loads (~21 MB, 193 files): `node_modules`, `submission/`, clips, the GLB/Spine opt-ins and the 134 unused Origins VFX clips stay local. `three` and `colyseus.js` load from jsDelivr via the import map in `index.html`.
+
+### Online play (Colyseus relay)
+
+The server (`aarcade-colyseus`, room `lunacia_rift`, Colyseus 0.16) only relays: lobby, invite codes, ready-up, then `cmd` / `snapshot` messages. The **host's browser runs the match**. The guest's heroes are the host's Red team, driven by relayed commands (move, select, QWER, shop, lane swap, Den/Spire actions). The guest does not simulate: it renders host snapshots (~15/s, eased between) mirrored so **both players see themselves as Blue on the left**. Online matches use equal stats for both sides (solo Blue keeps its +10% HP cushion vs the bot).
+
+Endpoints (`js/net.js`): `ws://142.93.55.122:2567` on http pages, `wss://142-93-55-122.sslip.io` on https pages (browsers block `ws://` from an https page). Override per browser under **Server** on the Online screen, or with `?mp=`.
+
+**TLS for the Vercel build:** put Caddy in front of the Colyseus port on the server. `sslip.io` maps the hostname to the IP, so no domain is needed, and Caddy fetches the certificate automatically (ports 80 and 443 must be open):
+
+```
+# /etc/caddy/Caddyfile
+142-93-55-122.sslip.io {
+    reverse_proxy localhost:2567
+}
+```
+
+Then `sudo systemctl reload caddy`. If the server's CORS config restricts origins, allow the Vercel domain for the `/matchmake` and `/invite` HTTP routes.
+
 ## How to run (judges)
 
 Static files / Canvas. From the project folder:
@@ -79,20 +110,42 @@ QWER still fires Origins additive VFX; GLB plays Attack/Skill oneshots in parall
 | Input | Action |
 |--------|--------|
 | **Click** on the map | Move the controlled Axie (click-to-move). Forest gaps between lanes let you walk mid-map between top/mid/bot. **Click your Den/Spire when the selected Axie is nearby (within 2 radii)** — Den: upgrade/breed Packs; Spire: repair/upgrade. Enemy Dens/Spires are not clickable |
-| **Hold Shift** or **Hold to zoom out** button | Zoom out to full map while held; release returns to tight zoomed-in follow on the selected Axie (~2.7×). **Fog of War** darkens the map outside vision of your living Axies (and lightly your Packs / Spires / Dens / Nest); enemy units outside vision are hidden |
+| **F** or **Follow hero** button / **hold Shift** | F (or the button) locks the camera zoomed (~2.7×) on the selected Axie; press again for the full board. Hold Shift to peek. The zoomed camera may overshoot the map edge so the hero stays centered in top/bot lanes and bases. **Fog of War** darkens the map outside vision of your living Axies while zoomed; enemy units outside vision are hidden |
 | **Tab** or **1 / 2 / 3** | **Tab** cycles your three Axies (living preferred; prevents browser focus steal). **1/2/3** select directly |
 | **Q W E R** | Mouth / Horn / Back / Tail specials (per Axie — see below) |
 | **Z / X / C** or HUD buttons | Start 10s lane-reassign channel (only inside your **Sanctuary**) |
 | Shop buttons | Buy Boots / Vial / Relic for the **currently selected** Axie |
 | **Den modal** | Click a player Den: upgrade Packs (100g→L1, 160g→L2) or **breed** Pack species (50g; pick 2–3 roster Axies as parents → **uniform random among all 9 Axie classes** for future Packs) |
 | **Spire modal** | Click your Spire (T1/T2): **Repair** (~35% max HP; 60g light / 120g heavy) or **Upgrade** (120g→L1, 200g→L2: +maxHp/+atk). No rebuild if destroyed |
-| **Top-left vitals** | Axie + Nest HP bars overlay the canvas (not in the bottom HUD) |
+| **Vitals panel** (bottom-left) | Axie + Nest HP bars. Click a row to select that Axie |
+| **H** | Hide / show the HUD (clean view for screenshots and footage) |
 
 **Specials (Round 1):** cooldowns from the HUD. **Buba** — Leaf Bite (melee+heal), Wooden Stake (slow poke), Pumpkin Shell (shield), Carrot Slam (AoE). **Olek** — Hungry Snap (bite+haste), Ram Horn (dash), Fur Mantle (move speed), Whip Lash (cleave). **Puffy** — Bubble Kiss (projectile), Coral Spike (armor shred), Scale Veil (damage reduce), Tidal Finish (execute). Bot casts occasionally when off CD and a foe is in range.
 
-Uncontrolled allies run simple lane AI: weak last-hits, hit Spires when no enemy hero is nearby, retreat under 30% HP toward Sanctuary.
+Uncontrolled allies run simple lane AI: weak last-hits, hit Spires when no enemy hero is nearby, retreat under 30% HP toward Sanctuary and stay there until healed to 90%. Once a Nest is unlocked, side-lane heroes route through the forest gaps to siege it (CPU vs CPU matches end in ~5–8 min).
 
 You fight a **bot trainer** using the same three starters on the opposite side.
+
+## Capturing screenshots / footage
+
+- **Spectator footage:** `http://localhost:8765/?cpu=1`. Both teams run on AI, the camera stays on the full board, and the HUD shows only Vitals, Genes, and the Combat log.
+- **Clean stills:** press **H** to hide the HUD; the `LUNACIA RIFT` wordmark stays top-right. Press **F** (or hold Shift) for the close-up follow camera. Works in `?cpu=1` too; pick the hero with Tab / 1-2-3.
+- The map is letterboxed between the header and the bottom HUD, so no lane is ever hidden behind panels.
+- The sim keeps ticking when the tab is hidden or occluded (timer fallback), so window-capture recorders don't freeze the match.
+- Console handle for staging shots: `window.__lunaciaGame` (e.g. `__lunaciaGame.state.structures`).
+- **Scripted footage:** `scripts/capture-footage.js` (load it into the `?cpu=1` page) composites the game canvas + Origins VFX at 1920×1080 and renders offline on a virtual clock via WebCodecs H.264, so the take does not depend on the window being visible. `?res=2` (default on HiDPI) renders the canvas at 3000×1600.
+- Submission assets live in `submission/` (thumbnail, screenshots, gameplay MP4, form copy in `SUBMISSION.md`).
+
+## Structure art
+
+Spires, Dens, Nests, and Sanctuaries are vector-drawn in `js/structArt.js` (Canvas2D, world space, so they stay sharp at 2.7× zoom):
+
+- **Spire:** stone obelisk, team banner, floating crystal. T2 is taller with a gold collar. Gold pips show upgrade level; rubble when destroyed.
+- **Den:** earthen burrow with a leaf-thatch roof in team color and a Pack-class emblem medallion showing the bred species sprite.
+- **Nest:** woven nest cradling a team-colored egg. Locked: shimmering barrier dome with a padlock. Unlocked: gold aura. The egg cracks as HP drops.
+- **Sanctuary:** healing glade with a rotating rune ring, standing stones, and drifting motes.
+
+If the module fails to load, `game.js` falls back to the old flat shapes.
 
 ## Naming glossary (player-facing)
 
@@ -171,6 +224,7 @@ Tuned for Round 1 judging: Pack waves every **22s**, Spire/Den/Nest HP bumped vs
   package.json / vite.config.js
   css/style.css
   js/game.js         # simulation + canvas (+ Spine hooks)
+  js/structArt.js    # vector Spire / Den / Nest / Sanctuary art
   js/main.js         # UI bindings (module)
   js/spineHeroes.js  # Mixer Spine overlay spike
   data/roster.json
@@ -189,6 +243,7 @@ Tuned for Round 1 judging: Pack waves every **22s**, Spire/Den/Nest HP bumped vs
 - [x] Glossary terms only: Nest / Spire / Pack / Sanctuary / Den
 - [x] Local static serve (no wallet required)
 - [ ] Push/sync Origin repo `user0xdef-ult/LUNACIA-RIFT` when ready
+- [x] Capture mode: `?cpu=1` spectator + **H** clean HUD toggle
 - [ ] Optional judge clip / screenshots
 
 ## Round 2 deferrals

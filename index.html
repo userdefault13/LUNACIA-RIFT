@@ -3,12 +3,91 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lunacia Rift — Round 1 Prototype</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <title>Lunacia Rift</title>
+  <meta name="description" content="Lunacia Rift — a 1v1 three-lane Axie micro-MOBA. Command Buba, Olek and Puffy, push Spires, crack the enemy Nest." />
+  <meta property="og:title" content="Lunacia Rift" />
+  <meta property="og:description" content="1v1 three-lane Axie micro-MOBA for the Axie Vibeathon." />
+  <meta property="og:image" content="/og.png" />
+  <link rel="icon" href="assets/axies/olek.png" />
+  <link rel="stylesheet" href="css/style.css?v=20261007g" />
 </head>
 <body class="origins-battle">
   <div id="app">
+    <!-- Front end (hash router in js/main.js): #/ home · #/how · #/online · #/play · #/watch -->
+    <div id="frontend" class="hidden" aria-live="polite">
+      <section class="fe-screen" data-screen="home">
+        <div class="fe-hero">
+          <p class="fe-kicker">Axie Vibeathon 2026</p>
+          <h1 class="fe-title">Lunacia Rift</h1>
+          <p class="fe-tagline">1v1 · three lanes · three Axies. Push the Spires, crack the enemy Nest.</p>
+          <nav class="fe-actions" aria-label="Main menu">
+            <a class="fe-btn fe-btn-primary" href="#/play"><span>Play vs Bot</span><small>Solo match against the trainer</small></a>
+            <a class="fe-btn" href="#/online"><span>Play Online</span><small>Invite a friend with a room code</small></a>
+            <a class="fe-btn" href="#/watch"><span>Watch CPU vs CPU</span><small>Spectate the lane AI</small></a>
+          </nav>
+          <p class="fe-links"><a href="#/how">How to play</a></p>
+        </div>
+        <ul class="fe-roster" aria-label="Starter Axies">
+          <li><img src="assets/axies/buba.png" alt="" /><b>Buba</b><span>Plant · hold</span></li>
+          <li><img src="assets/axies/olek.png" alt="" /><b>Olek</b><span>Beast · tempo</span></li>
+          <li><img src="assets/axies/puffy.png" alt="" /><b>Puffy</b><span>Aquatic · finish</span></li>
+        </ul>
+      </section>
+
+      <section class="fe-screen fe-panel" data-screen="how">
+        <a class="fe-back" href="#/">← Menu</a>
+        <h2>How to play</h2>
+        <div class="fe-grid">
+          <div class="fe-card"><h3>Goal</h3><p>Each side has three lanes guarded by Spires. Break any <b>two inner Spires</b> to unlock the enemy <b>Nest</b>, then destroy it.</p></div>
+          <div class="fe-card"><h3>Your Axies</h3><p>You command <b>Buba</b> (hold), <b>Olek</b> (tempo) and <b>Puffy</b> (finish), one per lane. The two you are not controlling fight on lane AI.</p></div>
+          <div class="fe-card"><h3>Gold</h3><p>Last-hit <b>Packs</b> and destroy structures for gold. Spend it in the <b>Shop</b>, or at your <b>Dens</b> and <b>Spires</b>.</p></div>
+          <div class="fe-card"><h3>Genes = skills</h3><p>Mouth, Horn, Back, Tail → <kbd>Q</kbd> <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd>. Classes counter each other: Plant &gt; Beast &gt; Aquatic &gt; Plant.</p></div>
+        </div>
+        <h3 class="fe-sub">Controls</h3>
+        <dl class="fe-keys">
+          <dt>Click</dt><dd>Move the selected Axie · click your Den / Spire when nearby to upgrade</dd>
+          <dt><kbd>Tab</kbd> <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></dt><dd>Switch Axie</dd>
+          <dt><kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd></dt><dd>Gene skills</dd>
+          <dt><kbd>F</kbd> / hold <kbd>Shift</kbd></dt><dd>Follow camera / peek zoom</dd>
+          <dt><kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd></dt><dd>Reassign lane (at your Sanctuary, 10s)</dd>
+          <dt><kbd>H</kbd></dt><dd>Hide the HUD</dd>
+        </dl>
+        <a class="fe-btn fe-btn-primary fe-inline" href="#/play"><span>Play vs Bot</span></a>
+      </section>
+
+      <section class="fe-screen fe-panel" data-screen="online">
+        <a class="fe-back" href="#/">← Menu</a>
+        <h2>Play Online</h2>
+        <p class="fe-muted">One player creates a room and shares the code; the other joins. Both press Ready to start.</p>
+        <p id="mp-insecure" class="fe-warn hidden">This page is served over HTTPS, so browsers block the game server's unencrypted <code>ws://</code> address. Online play needs a <code>wss://</code> server; set one under <b>Server</b> below.</p>
+        <label class="fe-field"><span>Your name</span><input id="mp-name" maxlength="16" placeholder="Player" autocomplete="nickname" /></label>
+        <div class="fe-row">
+          <button id="mp-create" class="fe-btn fe-btn-primary" type="button"><span>Create room</span></button>
+          <span class="fe-or">or</span>
+          <input id="mp-code" class="fe-code-input" maxlength="6" placeholder="CODE" aria-label="Invite code" autocapitalize="characters" />
+          <button id="mp-join" class="fe-btn" type="button"><span>Join</span></button>
+        </div>
+        <p id="mp-error" class="fe-error hidden" role="alert"></p>
+        <div id="mp-lobby" class="fe-lobby hidden">
+          <div class="fe-invite">Invite code <strong id="mp-invite-code">——</strong> <button id="mp-copy" class="fe-mini" type="button">Copy</button></div>
+          <ul id="mp-players" class="fe-players"></ul>
+          <p id="mp-status" class="fe-muted"></p>
+          <div class="fe-row">
+            <button id="mp-ready" class="fe-btn fe-btn-primary" type="button">Ready</button>
+            <button id="mp-start" class="fe-btn hidden" type="button">Start</button>
+            <button id="mp-leave" class="fe-btn" type="button">Leave</button>
+          </div>
+        </div>
+        <details class="fe-server">
+          <summary>Server</summary>
+          <label class="fe-field"><span>Game server</span><input id="mp-endpoint" placeholder="wss://your-server" spellcheck="false" /></label>
+          <p class="fe-muted">Current: <code id="mp-endpoint-label"></code></p>
+        </details>
+      </section>
+    </div>
+
     <header>
+      <a class="menu-link" href="#/" title="Back to menu">☰ Menu</a>
       <h1>Lunacia Rift</h1>
       <div id="match-readout" class="match-readout" aria-label="Match status">
         <span class="readout-chip"><span class="readout-k">Time</span> <strong id="timer">0:00</strong></span>
@@ -25,7 +104,48 @@
       <div class="side-marker side-you" aria-hidden="true">YOU</div>
       <div class="side-marker side-enemy" aria-hidden="true">ENEMY</div>
       <div id="channel"></div>
-      <div id="combat-hud" class="origins-panel" aria-label="Combat vitals">
+      <canvas id="game" width="1500" height="800" aria-label="Lunacia Rift battlefield"></canvas>
+      <canvas id="spine-overlay" width="1500" height="800" aria-hidden="true"></canvas>
+      <canvas id="glb-overlay" width="1500" height="800" aria-hidden="true"></canvas>
+      <canvas id="origins-vfx-overlay" width="1500" height="800" aria-hidden="true"></canvas>
+      <div id="overlay">
+        <div class="card origins-card">
+          <img id="overlay-flag" class="overlay-flag hidden" alt="" />
+          <h2 id="overlay-title">Lunacia Rift</h2>
+          <p id="overlay-body">
+            1v1 three-lane micro-MOBA. Command <strong>Buba / Olek / Puffy</strong> — one per lane.
+            Last-hit Packs for gold, push Spires, then crack the <strong>Nest</strong> to win.
+            Nest unlocks after any <strong>two inner (T2) Spires</strong> fall. You vs bot trainer.
+          </p>
+          <p class="hint">Click-to-move · Tab / 1-2-3 select · QWER skills · Shop · Den/Spire when in range · F follow / Shift peek zoom · Z/X/C lane swap at Sanctuary · H hide HUD</p>
+          <div class="overlay-actions">
+            <button id="start-btn" type="button">Start match</button>
+            <a class="overlay-menu" href="#/">Main menu</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="den-modal" class="hidden origins-modal" aria-hidden="true">
+      <div class="den-modal-backdrop" data-den-close="1"></div>
+      <div class="den-modal-card origins-card" role="dialog" aria-labelledby="den-modal-title">
+        <button type="button" class="den-modal-close" id="den-modal-x" aria-label="Close">×</button>
+        <h2 id="den-modal-title">Den</h2>
+        <div id="den-modal-body" class="upgrade-scroll"></div>
+      </div>
+    </div>
+    <div id="spire-modal" class="hidden origins-modal" aria-hidden="true">
+      <div class="den-modal-backdrop" data-spire-close="1"></div>
+      <div class="den-modal-card origins-card" role="dialog" aria-labelledby="spire-modal-title">
+        <button type="button" class="den-modal-close" id="spire-modal-x" aria-label="Close">×</button>
+        <h2 id="spire-modal-title">Spire</h2>
+        <div id="spire-modal-body" class="upgrade-scroll"></div>
+      </div>
+    </div>
+
+    <div id="hud" class="origins-hud">
+      <div id="combat-hud" class="panel panel-vitals" aria-label="Combat vitals">
+        <h2>Vitals</h2>
         <div id="combat-axies"></div>
         <div class="combat-nest-row">
           <span class="combat-nest-label" id="combat-nest-player-label">Your Nest</span>
@@ -40,42 +160,7 @@
           </div>
         </div>
       </div>
-      <canvas id="game" width="1500" height="800" aria-label="Lunacia Rift battlefield"></canvas>
-      <canvas id="spine-overlay" width="1500" height="800" aria-hidden="true"></canvas>
-      <canvas id="glb-overlay" width="1500" height="800" aria-hidden="true"></canvas>
-      <canvas id="origins-vfx-overlay" width="1500" height="800" aria-hidden="true"></canvas>
-      <div id="overlay">
-        <div class="card origins-card">
-          <img id="overlay-flag" class="overlay-flag hidden" alt="" />
-          <h2 id="overlay-title">Lunacia Rift</h2>
-          <p id="overlay-body">
-            1v1 three-lane micro-MOBA. Command <strong>Buba / Olek / Puffy</strong> — one per lane.
-            Last-hit Packs for gold, push Spires, then crack the <strong>Nest</strong> to win.
-            Nest unlocks after any <strong>two inner (T2) Spires</strong> fall. You vs bot trainer.
-          </p>
-          <p class="hint">Click-to-move · Tab / 1-2-3 select · QWER skills · Shop · Den/Spire when in range · Shift zoom · Z/X/C lane swap at Sanctuary</p>
-          <button id="start-btn" type="button">Start match</button>
-        </div>
-      </div>
-      <div id="den-modal" class="hidden origins-modal" aria-hidden="true">
-        <div class="den-modal-backdrop" data-den-close="1"></div>
-        <div class="den-modal-card origins-card" role="dialog" aria-labelledby="den-modal-title">
-          <button type="button" class="den-modal-close" id="den-modal-x" aria-label="Close">×</button>
-          <h2 id="den-modal-title">Den</h2>
-          <div id="den-modal-body"></div>
-        </div>
-      </div>
-      <div id="spire-modal" class="hidden origins-modal" aria-hidden="true">
-        <div class="den-modal-backdrop" data-spire-close="1"></div>
-        <div class="den-modal-card origins-card" role="dialog" aria-labelledby="spire-modal-title">
-          <button type="button" class="den-modal-close" id="spire-modal-x" aria-label="Close">×</button>
-          <h2 id="spire-modal-title">Spire</h2>
-          <div id="spire-modal-body"></div>
-        </div>
-      </div>
-    </div>
 
-    <div id="hud" class="origins-hud">
       <div class="panel panel-axies">
         <h2>Your Axies</h2>
         <div id="axie-select"></div>
@@ -84,11 +169,11 @@
       <div class="panel panel-lanes">
         <h2>Lane / Cam</h2>
         <div class="lane-row">
-          <button class="axie-btn" id="lane-top" type="button">→ Top</button>
-          <button class="axie-btn" id="lane-mid" type="button">→ Mid</button>
-          <button class="axie-btn" id="lane-bot" type="button">→ Bot</button>
+          <button class="axie-btn" id="lane-top" type="button" title="Reassign selected Axie to Top (10s channel at Sanctuary)">Top</button>
+          <button class="axie-btn" id="lane-mid" type="button" title="Reassign selected Axie to Mid (10s channel at Sanctuary)">Mid</button>
+          <button class="axie-btn" id="lane-bot" type="button" title="Reassign selected Axie to Bot (10s channel at Sanctuary)">Bot</button>
         </div>
-        <button class="zoom-hold-btn" id="zoom-out-btn" type="button" title="Hold to zoom in on the selected Axie">Zoom in (Shift)</button>
+        <button class="zoom-hold-btn" id="zoom-out-btn" type="button" aria-pressed="false" title="Lock the camera on the selected Axie (F). Hold Shift to peek.">Follow hero (F)</button>
         <p class="hint">Sanctuary: Z/X/C · Den / Spire click</p>
       </div>
 
@@ -101,7 +186,7 @@
 
       <div class="panel panel-shop">
         <h2>Shop</h2>
-        <div id="shop-list"></div>
+        <div id="shop-list" class="upgrade-scroll"></div>
       </div>
 
       <div class="panel panel-log">
@@ -114,8 +199,9 @@
   <script type="importmap">
   {
     "imports": {
-      "three": "./node_modules/three/build/three.module.js",
-      "three/addons/": "./node_modules/three/examples/jsm/"
+      "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/",
+      "colyseus.js": "https://cdn.jsdelivr.net/npm/colyseus.js@0.16/+esm"
     }
   }
   </script>
@@ -138,9 +224,11 @@
       } catch (e) { /* */ }
       return false;
     })();
-    // CPU vs CPU spectator demo. Opt-in: ?cpu=1 (alias ?demo=cpu)
+    // CPU vs CPU: ?cpu=1 (alias ?demo=cpu), #/watch, and behind the menu screens (#/, #/how)
     window.USE_CPU_VS_CPU = (function () {
       try {
+        const route = (location.hash || '').replace(/^#\/?/, '');
+        if (route === '' || route === 'how' || route === 'watch') return true;
         const q = new URLSearchParams(location.search);
         const v = q.get('cpu');
         if (v === '1' || v === 'true' || v === 'on') return true;
@@ -150,8 +238,9 @@
       return false;
     })();
   </script>
-  <script src="js/tilemap.js"></script>
-  <script src="js/game.js"></script>
-  <script type="module" src="js/main.js"></script>
+  <script src="js/tilemap.js?v=20261007g"></script>
+  <script src="js/structArt.js?v=20261007g"></script>
+  <script src="js/game.js?v=20261007g"></script>
+  <script type="module" src="js/main.js?v=20261007g"></script>
 </body>
 </html>

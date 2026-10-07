@@ -1,0 +1,31 @@
+# Allowlist: upload only what the static game loads (no build, no serverless functions).
+/*
+!/index.html
+!/og.png
+!/vercel.json
+!/css
+!/js
+!/data
+!/assets
+
+# Opt-in / source-only assets (?glb=1 and ?spine=1 fall back to PNG heroes)
+/assets/poster
+/assets/glb
+/assets/map/**/*.aseprite
+/assets/map/*preview*.png
+
+# Origins VFX: only the 12 starter clips preloaded at boot (~12 MB of 146 MB)
+/assets/origins-vfx/*
+!/assets/origins-vfx/NOTICE.md
+!/assets/origins-vfx/plant_bite
+!/assets/origins-vfx/plant_slash
+!/assets/origins-vfx/shield
+!/assets/origins-vfx/plant_smash
+!/assets/origins-vfx/beast_bite
+!/assets/origins-vfx/beast_gore
+!/assets/origins-vfx/beast_cast
+!/assets/origins-vfx/beast_smash
+!/assets/origins-vfx/aquatic_projectile
+!/assets/origins-vfx/aquatic_slash
+!/assets/origins-vfx/aquatic_cast
+!/assets/origins-vfx/aquatic_smash

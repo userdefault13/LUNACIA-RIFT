@@ -191,6 +191,11 @@ function playSfx(clipId) {
 function tick() {
   if (!running) return;
   rafId = requestAnimationFrame(tick);
+  renderVfx();
+}
+
+/** One overlay frame at performance.now(); offline capture calls this directly. */
+function renderVfx() {
   if (!octx || !overlay || !gameRef) return;
   pinOverlay();
 
@@ -206,6 +211,7 @@ function tick() {
 
   // Same camera transform as game.js render()
   octx.save();
+  octx.scale(overlay.width / W, overlay.height / H); // match game.js RES backing scale
   octx.translate(W / 2, H / 2);
   octx.scale(cam.zoom, cam.zoom);
   octx.translate(-cam.x, -cam.y);
@@ -342,6 +348,8 @@ export async function preloadStarterClips() {
  * @param {*} game
  * @param {HTMLCanvasElement} canvas
  */
+if (typeof window !== 'undefined') window.__originsVfxRender = () => renderVfx();
+
 export async function attachOriginsVfx(game, canvas) {
   gameRef = game;
   gameCanvas = canvas;

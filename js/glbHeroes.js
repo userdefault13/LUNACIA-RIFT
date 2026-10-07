@@ -405,7 +405,7 @@ export async function attachGlbHeroes(game, gameCanvas) {
       overlay.height = ch;
     }
     renderer.setSize(cw, ch, false);
-    syncCamera(camera, st.cam, cw, ch);
+    syncCamera(camera, st.cam, game.W || W, game.H || H); // world units, not backing px (RES)
 
     const now = performance.now();
 

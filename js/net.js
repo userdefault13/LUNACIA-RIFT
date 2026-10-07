@@ -4,12 +4,21 @@
 import { Client } from "colyseus.js";
 
 export const DEFAULT_ENDPOINT = "ws://142.93.55.122:2567";
+/** HTTPS pages (Vercel) can only open wss://. TLS proxy in front of :2567 — see README "Online play". */
+export const SECURE_ENDPOINT = "wss://142-93-55-122.sslip.io";
+
+function defaultEndpoint() {
+  try {
+    if (location.protocol === 'https:') return SECURE_ENDPOINT;
+  } catch (_) {}
+  return DEFAULT_ENDPOINT;
+}
 export const LS_ENDPOINT_KEY = "lunacia_mp_endpoint";
 
 /** @param {string} raw */
 export function normalizeEndpoint(raw) {
   let s = String(raw || '').trim();
-  if (!s) return DEFAULT_ENDPOINT;
+  if (!s) return defaultEndpoint();
   if (s.startsWith('http://')) s = 'ws://' + s.slice(7);
   else if (s.startsWith('https://')) s = 'wss://' + s.slice(8);
   else if (!s.startsWith('ws://') && !s.startsWith('wss://')) s = 'ws://' + s;
@@ -31,7 +40,7 @@ export function resolveEndpoint() {
     const saved = localStorage.getItem(LS_ENDPOINT_KEY);
     if (saved) return normalizeEndpoint(saved);
   } catch (_) {}
-  return DEFAULT_ENDPOINT;
+  return defaultEndpoint();
 }
 
 function httpBaseFromWs(wsUrl) {
@@ -142,6 +151,14 @@ export class LunaciaNet extends EventTarget {
     this._emit('connection', true);
 
     room.onStateChange(() => { this._syncFromState(); });
+    // Colyseus 0.16 can deliver the first full state before this listener exists; re-sync now
+    // and lightly poll while in the lobby so the player list / ready flags never go stale.
+    setTimeout(() => this._syncFromState(), 0);
+    clearInterval(this._lobbyPoll);
+    this._lobbyPoll = setInterval(() => {
+      if (!this.room) { clearInterval(this._lobbyPoll); return; }
+      if (this.phase === 'lobby') this._syncFromState();
+    }, 500);
 
     room.onMessage('cmd', (envelope) => { this._emit('cmd', envelope); });
     room.onMessage('snapshot', (payload) => { this._emit('snapshot', payload); });
@@ -271,6 +288,7 @@ export class LunaciaNet extends EventTarget {
   }
 
   async leave() {
+    clearInterval(this._lobbyPoll);
     const room = this.room;
     this.room = null;
     this.multiplayer = false;

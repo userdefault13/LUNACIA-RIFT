@@ -252,10 +252,11 @@
     }
   }
 
-  /** Path Pack to Nest via nearest forest gap when leaving a side lane. */
-  function moveTowardNest(p, nest, dt) {
+  /** Path a Pack or hero to the Nest via the nearest forest gap when leaving a side lane. */
+  function moveTowardNest(p, nest, dt, speed) {
+    const spd = speed || p.speed;
     if (Math.abs(p.y - nest.y) <= 20) {
-      moveToward(p, nest.x, nest.y, p.speed, dt);
+      moveToward(p, nest.x, nest.y, spd, dt);
       return;
     }
     let gapX = FOREST_GAP_XS[0];
@@ -266,11 +267,11 @@
       if (d < best) { best = d; gapX = gx; }
     }
     if (Math.abs(p.x - gapX) > 12) {
-      moveToward(p, gapX, p.y, p.speed, dt);
+      moveToward(p, gapX, p.y, spd, dt);
     } else if (Math.abs(p.y - nest.y) > 12) {
-      moveToward(p, gapX, nest.y, p.speed, dt);
+      moveToward(p, gapX, nest.y, spd, dt);
     } else {
-      moveToward(p, nest.x, nest.y, p.speed, dt);
+      moveToward(p, nest.x, nest.y, spd, dt);
     }
   }
   /**
@@ -306,8 +307,16 @@
   function createGame(roster, canvas, ui, contract) {
     applyGameContract(contract || null);
     const ctx = canvas.getContext('2d');
-    canvas.width = W;
-    canvas.height = H;
+    // Backing-store scale: 2× on HiDPI (crisp on Retina + 1080p capture). ?res=1|2|3 overrides.
+    const RES = (function () {
+      try {
+        const q = new URLSearchParams(location.search).get('res');
+        if (q && +q >= 1 && +q <= 3) return +q;
+      } catch (e) { /* */ }
+      return Math.min(2, Math.max(1, Math.ceil(global.devicePixelRatio || 1)));
+    })();
+    canvas.width = W * RES;
+    canvas.height = H * RES;
 
     // Official CDN transparent PNGs (shared both teams). ~48px on canvas.
     // Starters (buba/olek/puffy) for heroes; packSpecies class ids for Den Packs.
@@ -442,6 +451,9 @@
     const ZOOM_OUT = 1.0;
     const CAM_FOLLOW = 6; // lerp rate toward focus
     const ZOOM_LERP = 8;
+    // Zoomed camera may overshoot the map edge so the selected hero stays centered
+    // (top/bot lanes + bases). Scales to 0 at the wide zoom.
+    const CAM_EDGE_SLACK = 90;
     const CORPSE_CAM_SEC = 0.85;
     // Fog of War (Round 1): player-centric vision radii in world px
     const FOG_ALPHA = 0.72;
@@ -484,6 +496,8 @@
       // Camera: wide three-lane arena by default (thumbnail + match start).
       // zoomOutHeld is the historical flag: true = hold Shift / button to zoom IN.
       zoomOutHeld: false,
+      zoomLocked: false, // F / zoom button: stay zoomed on the selected hero
+      timeScale: 1, // sim steps per frame (capture montage)
       cam: { x: W / 2, y: H / 2, zoom: ZOOM_OUT },
       camCorpseUntil: 0,
       camCorpsePos: null,
@@ -666,6 +680,26 @@
     function playerAxies() { return state.axies.filter((a) => a.team === 'player'); }
     function selected() { return playerAxies()[state.selectedIdx]; }
 
+    // --- Online 1v1: host-authoritative relay ---
+    // Host runs the sim; the guest's heroes are the host's 'enemy' team, driven by relayed cmds.
+    // Guest does not simulate: it sends cmds and renders host snapshots mirrored (x → W − x,
+    // teams swapped) so both players see themselves as Blue on the left.
+    const mp = { enabled: false, isHost: false, onLocalCmd: null, onMatchEndLocal: null, events: [], structMap: null };
+    function isGuest() { return mp.enabled && !mp.isHost; }
+    function isHostMp() { return mp.enabled && mp.isHost; }
+    function sendCmd(cmd) { if (mp.onLocalCmd) mp.onLocalCmd(cmd); }
+    function goldOf(team) { return team === 'player' ? state.gold : state.enemyGold; }
+    function spendGold(team, n) {
+      if (team === 'player') state.gold -= n;
+      else state.enemyGold -= n;
+    }
+    function enemyAxies() { return state.axies.filter((a) => a.team === 'enemy'); }
+    function teamSelected(team) {
+      return team === 'player' ? selected() : enemyAxies()[state.enemySelectedIdx || 0];
+    }
+    /** Team actions by the remote player only log on their own screen. */
+    function teamLog(team) { return team === 'player' ? log : () => {}; }
+
     function nestFor(team) {
       return state.structures.find((s) => s.type === 'nest' && s.team === team);
     }
@@ -713,7 +747,7 @@
             team: 'enemy',
             baseX: ENEMY_BASE_X - 90,
             dir: -1,
-            atk: 9,
+            atk: mp.enabled ? 12 : 9, // online 1v1: same Pack strength both sides
           },
         ];
         for (const side of teams) {
@@ -885,6 +919,7 @@
         state.winner = attacker.team === 'player' ? 'player' : 'enemy';
         log(state.winner === 'player' ? 'Victory! Enemy Nest shattered.' : 'Defeat — your Nest fell.');
         if (ui.showEnd) ui.showEnd(state.winner);
+        if (isHostMp() && mp.onMatchEndLocal) mp.onMatchEndLocal(state.winner);
       }
       if (target.slot != null && target.defId) {
         // hero death — Axie-on-Axie killing blow levels the killer (not packs/structures)
@@ -974,13 +1009,16 @@
 
     function updateHeroAI(axie, dt) {
       if (!axie.alive) return;
-      // Retreat under 30% toward Sanctuary
-      if (axie.hp / axie.maxHp < 0.3) {
+      // Retreat under 30% toward Sanctuary; stay retreating until healed to 90%
+      // (without hysteresis heroes hovered at 30% forever and never pushed the Nest)
+      const hpFrac = axie.hp / axie.maxHp;
+      if (axie.aiState === 'retreat' ? hpFrac < 0.9 : hpFrac < 0.3) {
         axie.aiState = 'retreat';
         const s = sanctuaryPos(axie.team);
         axie.targetX = s.x;
         axie.targetY = s.y;
-        moveToward(axie, axie.targetX, axie.targetY, moveSpeed(axie), dt);
+        // Sanctuary sits on the mid line: side lanes route through a forest gap
+        moveTowardNest(axie, s, dt, moveSpeed(axie));
         if (inSanctuary(axie)) {
           axie.hp = Math.min(axie.maxHp, axie.hp + 40 * dt);
         }
@@ -1032,7 +1070,10 @@
       if (!push && nest && nest.unlocked && nest.alive) push = nest;
       if (push) {
         axie.aiWeakLastHit = false;
-        if (dist(axie, push) > axie.atkRange - 8) {
+        if (push === nest) {
+          // The Nest sits on mid: side-lane heroes must leave their lane through a forest gap
+          if (dist(axie, nest) > axie.atkRange + nest.r - 8) moveTowardNest(axie, nest, dt, moveSpeed(axie));
+        } else if (dist(axie, push) > axie.atkRange - 8) {
           moveToward(axie, push.x, y, moveSpeed(axie), dt);
         } else {
           axie.y += (y - axie.y) * Math.min(1, 3 * dt);
@@ -1356,14 +1397,23 @@
     function castSkill(axie, key) {
       if (!state.running || state.ended) return false;
       if (!axie || !axie.alive) return false;
+      if (isGuest()) {
+        if (axie.team === 'player' && axie.controlled && axie.skills[key] && axie.skills[key].cd <= 0) {
+          sendCmd({ t: 'cast', k: key });
+        }
+        return false;
+      }
       // Player may only cast on the selected (controlled) Axie; bots / CPU-vs-CPU cast freely
       if (axie.team === 'player' && !axie.controlled && !state.cpuVsCpu) return false;
+      // Online host: the guest may only cast on their selected Axie
+      if (axie.team === 'enemy' && isHostMp() && !axie.controlled) return false;
       const sk = axie.skills[key];
       if (!sk || sk.cd > 0) return false;
       sk.cd = sk.max;
       const facing = axie.facingRight ? 1 : -1;
       const partName = sk.name;
       log(`${axie.name}: ${partName} (${key})`);
+      if (isHostMp()) mp.events.push([axie.team === 'player' ? 0 : 1, axie.slot, key]);
 
       if (axie.defId === 'buba') castBuba(axie, key, facing, partName);
       else if (axie.defId === 'olek') castOlek(axie, key, facing, partName);
@@ -1597,6 +1647,17 @@
     }
 
     function updateChannel(dt) {
+      // state.channel = local player; state.enemyChannel = online guest (host only)
+      if (state.enemyChannel) {
+        const ch = state.enemyChannel;
+        ch.t += dt;
+        if (ch.t >= ch.dur) {
+          ch.axie.lane = ch.lane;
+          ch.axie.y = LANE_Y[ch.lane];
+          ch.axie.targetY = ch.axie.y;
+          state.enemyChannel = null;
+        }
+      }
       if (!state.channel) return;
       state.channel.t += dt;
       if (ui.setChannel) {
@@ -1613,35 +1674,50 @@
       }
     }
 
-    function startLaneChannel(lane) {
-      const ax = selected();
+    function startLaneChannel(lane, team) {
+      team = team || 'player';
+      if (isGuest()) {
+        sendCmd({ t: 'lane', lane });
+        return;
+      }
+      const say = teamLog(team);
+      const ax = teamSelected(team);
       if (!ax || !ax.alive) return;
       if (!inSanctuary(ax)) {
-        log('Lane reassign only at Sanctuary');
+        say('Lane reassign only at Sanctuary');
         return;
       }
       if (ax.lane === lane) return;
-      state.channel = { axie: ax, lane, t: 0, dur: 10 };
-      log(`Channeling lane swap → ${lane} (10s)`);
+      const ch = { axie: ax, lane, t: 0, dur: 10 };
+      if (team === 'player') state.channel = ch;
+      else state.enemyChannel = ch;
+      say(`Channeling lane swap → ${lane} (10s)`);
     }
 
-    function buyItem(itemId) {
-      const ax = selected();
+    function buyItem(itemId, team) {
+      team = team || 'player';
+      if (isGuest()) {
+        sendCmd({ t: 'buy', id: itemId });
+        return;
+      }
+      const say = teamLog(team);
+      const ax = teamSelected(team);
       if (!ax || !ax.alive) return;
       const item = state.shop.find((s) => s.id === itemId);
       if (!item) return;
       if (ax.items[itemId]) {
-        log(`${ax.name} already has ${item.name}`);
+        say(`${ax.name} already has ${item.name}`);
         return;
       }
-      if (state.gold < item.cost) {
-        log('Not enough gold');
+      if (goldOf(team) < item.cost) {
+        say('Not enough gold');
         return;
       }
-      state.gold -= item.cost;
+      spendGold(team, item.cost);
       ax.items[itemId] = true;
       applyItemStats(ax);
-      log(`${ax.name} equipped ${item.name}`);
+      say(`${ax.name} equipped ${item.name}`);
+      if (team !== 'player') return;
       if (ui.renderShop) ui.renderShop(state);
       if (ui.renderAxies) ui.renderAxies(state);
     }
@@ -1649,6 +1725,7 @@
     function selectAxie(idx) {
       const pals = playerAxies();
       if (idx < 0 || idx >= pals.length) return;
+      if (isGuest()) sendCmd({ t: 'select', i: idx });
       // Manual / Tab selects cancel corpse linger (death re-sets linger after this call)
       state.camCorpsePos = null;
       state.camCorpseUntil = 0;
@@ -1725,14 +1802,20 @@
      * Outcome: uniform random among all 9 Axie classes (parents are flavor / Core feel; they do not limit the pool). */
     function breedDenPacks(lane, parentIds, team) {
       team = team || 'player';
-      if (team !== 'player') return false;
+      if (isGuest()) {
+        const slots = (parentIds || []).map((id) => playerAxies().findIndex((a) => a.id === id)).filter((i) => i >= 0);
+        sendCmd({ t: 'breed', lane, slots });
+        return false;
+      }
+      if (team !== 'player' && !isHostMp()) return false;
+      const log = teamLog(team);
       const den = denFor(team, lane);
       if (!den || !den.alive) {
         log(`No living Den on ${lane}`);
         return false;
       }
       const ids = Array.isArray(parentIds) ? parentIds.filter(Boolean) : [];
-      const pals = state.axies.filter((a) => a.team === 'player');
+      const pals = state.axies.filter((a) => a.team === team);
       const parents = [];
       const seen = new Set();
       for (const id of ids) {
@@ -1747,7 +1830,7 @@
         log('Select 2 or 3 Axies to breed Packs');
         return false;
       }
-      if (state.gold < BREED_PACK_COST) {
+      if (goldOf(team) < BREED_PACK_COST) {
         log(`Need ${BREED_PACK_COST}g to breed Packs`);
         return false;
       }
@@ -1762,7 +1845,7 @@
         log('Breed failed — unknown species');
         return false;
       }
-      state.gold -= BREED_PACK_COST;
+      spendGold(team, BREED_PACK_COST);
       den.speciesId = rolled;
       const label = lane[0].toUpperCase() + lane.slice(1);
       const traitName = (def.trait && def.trait.name) || '';
@@ -1788,6 +1871,10 @@
 
     function upgradeDen(lane, team) {
       team = team || 'player';
+      if (isGuest() && team === 'player') {
+        sendCmd({ t: 'den', lane });
+        return false;
+      }
       const den = denFor(team, lane);
       if (!den || !den.alive) {
         if (team === 'player') log(`No living Den on ${lane}`);
@@ -1854,7 +1941,12 @@
 
     function repairSpire(lane, tier, team) {
       team = team || 'player';
-      if (team !== 'player') return false;
+      if (isGuest()) {
+        sendCmd({ t: 'spireRepair', lane, tier });
+        return false;
+      }
+      if (team !== 'player' && !isHostMp()) return false;
+      const log = teamLog(team);
       const spire = spireFor(team, lane, tier);
       if (!spire || !spire.alive) {
         log('That Spire is destroyed — no rebuild this round');
@@ -1866,11 +1958,11 @@
         log(`${spireLabel(spire)} is already at full HP`);
         return false;
       }
-      if (state.gold < cost) {
+      if (goldOf(team) < cost) {
         log(`Need ${cost}g to repair Spire`);
         return false;
       }
-      state.gold -= cost;
+      spendGold(team, cost);
       spire.hp = Math.min(spire.maxHp, spire.hp + heal);
       log(`Repaired ${spireLabel(spire)} +${heal} HP (−${cost}g)`);
       if (ui.renderShop) ui.renderShop(state);
@@ -1881,7 +1973,12 @@
 
     function upgradeSpire(lane, tier, team) {
       team = team || 'player';
-      if (team !== 'player') return false;
+      if (isGuest()) {
+        sendCmd({ t: 'spireUpgrade', lane, tier });
+        return false;
+      }
+      if (team !== 'player' && !isHostMp()) return false;
+      const log = teamLog(team);
       const spire = spireFor(team, lane, tier);
       if (!spire || !spire.alive) {
         log('That Spire is destroyed — cannot upgrade');
@@ -1894,11 +1991,11 @@
       }
       const cost = SPIRE_UPGRADE_COST[lv];
       const bonus = SPIRE_UPGRADE_BONUS[lv];
-      if (state.gold < cost) {
+      if (goldOf(team) < cost) {
         log(`Need ${cost}g to upgrade Spire`);
         return false;
       }
-      state.gold -= cost;
+      spendGold(team, cost);
       spire.level = lv + 1;
       spire.maxHp += bonus.maxHp;
       spire.atkDamage += bonus.atk;
@@ -1994,11 +2091,11 @@
     }
 
     function wideFraming() {
-      return !state.zoomOutHeld;
+      return !(state.zoomOutHeld || state.zoomLocked);
     }
 
     function updateCamera(dt) {
-      const wide = state.cpuVsCpu ? true : wideFraming();
+      const wide = wideFraming();
       const targetZoom = wide ? ZOOM_OUT : ZOOM_IN;
       const zAlpha = 1 - Math.exp(-ZOOM_LERP * dt);
       state.cam.zoom += (targetZoom - state.cam.zoom) * zAlpha;
@@ -2012,14 +2109,16 @@
       const z = Math.max(0.01, state.cam.zoom);
       const halfW = W / (2 * z);
       const halfH = H / (2 * z);
-      state.cam.x = clamp(state.cam.x, halfW, W - halfW);
-      state.cam.y = clamp(state.cam.y, halfH, H - halfH);
+      const zt = clamp((z - ZOOM_OUT) / (ZOOM_IN - ZOOM_OUT), 0, 1);
+      const slack = CAM_EDGE_SLACK * zt;
+      state.cam.x = clamp(state.cam.x, halfW - slack, W - halfW + slack);
+      state.cam.y = clamp(state.cam.y, halfH - slack, H - halfH + slack);
     }
 
     function screenToWorld(clientX, clientY) {
       const rect = canvas.getBoundingClientRect();
-      const sx = (clientX - rect.left) * (canvas.width / rect.width);
-      const sy = (clientY - rect.top) * (canvas.height / rect.height);
+      const sx = (clientX - rect.left) * (W / rect.width);
+      const sy = (clientY - rect.top) * (H / rect.height);
       const z = state.cam.zoom;
       return {
         x: (sx - W / 2) / z + state.cam.x,
@@ -2031,7 +2130,202 @@
       state.zoomOutHeld = !!held;
     }
 
+    // --- Online 1v1 API (used by js/main.js) ---
+    function setMultiplayer(opts) {
+      const o = opts || {};
+      mp.enabled = !!o.enabled;
+      mp.isHost = !!o.isHost;
+      mp.onLocalCmd = o.onLocalCmd || null;
+      mp.onMatchEndLocal = o.onMatchEndLocal || null;
+      mp.events = [];
+      mp.structMap = null;
+      if (!mp.enabled) return;
+      state.cpuVsCpu = false;
+      // Fair 1v1: mirror the solo player's hero cushion, gold and Pack strength onto the other side
+      for (const e of enemyAxies()) {
+        const p = playerAxies().find((a) => a.slot === e.slot);
+        if (p) {
+          e.maxHp = p.maxHp;
+          e.hp = p.hp;
+          e.armor = p.armor;
+          e._baseMaxHp = p._baseMaxHp != null ? p._baseMaxHp : p.maxHp; // applyItemStats rebuilds from this
+          e._baseMaxHpInit = true;
+        }
+      }
+      state.enemyGold = state.gold;
+      state.enemySelectedIdx = 0;
+      enemyAxies().forEach((a) => { a.controlled = isHostMp() && a.slot === 0; });
+    }
+
+    /** Host: apply a guest command to the 'enemy' team (guest coords are mirrored). */
+    function applyRemoteCmd(cmd) {
+      if (!isHostMp() || !cmd || !state.running || state.ended) return;
+      const foes = enemyAxies();
+      const ax = foes[state.enemySelectedIdx || 0];
+      switch (cmd.t) {
+        case 'move':
+          if (ax && ax.alive) {
+            ax.targetX = clamp(W - cmd.x, 20, W - 20);
+            ax.targetY = clamp(cmd.y, 20, H - 20);
+          }
+          break;
+        case 'select':
+          if (cmd.i >= 0 && cmd.i < foes.length) {
+            state.enemySelectedIdx = cmd.i;
+            foes.forEach((a, i) => { a.controlled = i === cmd.i; });
+            const pick = foes[cmd.i];
+            if (pick.alive) {
+              pick.targetX = pick.x;
+              pick.targetY = pick.y;
+            }
+            state.enemyChannel = null;
+          }
+          break;
+        case 'cast': if (ax) castSkill(ax, cmd.k); break;
+        case 'buy': buyItem(cmd.id, 'enemy'); break;
+        case 'lane': startLaneChannel(cmd.lane, 'enemy'); break;
+        case 'den': upgradeDen(cmd.lane, 'enemy'); break;
+        case 'breed':
+          breedDenPacks(cmd.lane, (cmd.slots || []).map((i) => foes[i] && foes[i].id), 'enemy');
+          break;
+        case 'spireRepair': repairSpire(cmd.lane, cmd.tier, 'enemy'); break;
+        case 'spireUpgrade': upgradeSpire(cmd.lane, cmd.tier, 'enemy'); break;
+        default: break;
+      }
+    }
+
+    const SKILL_KEYS = ['Q', 'W', 'E', 'R'];
+    const r1 = (v) => Math.round(v * 10) / 10;
+    /** Host → guest state, compact arrays (~15/s). Team 0 = host Blue, 1 = host Red. */
+    function getSnapshot() {
+      const tm = (team) => (team === 'player' ? 0 : 1);
+      return {
+        t: r1(state.t),
+        g: [Math.floor(state.gold), Math.floor(state.enemyGold)],
+        end: state.ended ? tm(state.winner) : -1,
+        ax: state.axies.map((a) => [
+          tm(a.team), a.slot, r1(a.x), r1(a.y), Math.ceil(a.hp), a.maxHp, a.alive ? 1 : 0,
+          a.level || 1, a.facingRight ? 1 : 0, a.lane, r1(a.respawnAt || 0),
+          SKILL_KEYS.map((k) => r1(a.skills[k].cd)),
+          (a.items.boots ? 1 : 0) | (a.items.vial ? 2 : 0) | (a.items.relic ? 4 : 0),
+          Math.round((a.buffs && a.buffs.shield) || 0),
+        ]),
+        pk: living(state.packs).map((p) => [
+          tm(p.team), r1(p.x), r1(p.y), Math.ceil(p.hp), p.maxHp, p.speciesId, p.facingRight ? 1 : 0, p.lane,
+        ]),
+        st: state.structures.map((st) => [
+          Math.ceil(st.hp), st.maxHp, st.alive ? 1 : 0, st.unlocked ? 1 : 0, st.level || 0, st.speciesId || '',
+        ]),
+        pr: state.projectiles.map((p) => [
+          tm(p.team), r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), p.r, p.color, p.kind, r1(p.life), p.glow,
+        ]),
+        ev: mp.events.splice(0),
+      };
+    }
+
+    /** Guest: adopt a host snapshot, mirrored so the guest plays Blue on the left. */
+    function applySnapshot(snap) {
+      if (!isGuest() || !snap) return;
+      const team = (n) => (n === 0 ? 'enemy' : 'player'); // host Blue is the guest's enemy
+      state.t = snap.t;
+      state.gold = snap.g[1];
+      state.enemyGold = snap.g[0];
+      for (const row of snap.ax || []) {
+        const [tm, slot, x, y, hp, maxHp, alive, lv, fr, lane, respawnAt, cds, items, shield] = row;
+        const a = state.axies.find((u) => u.team === team(tm) && u.slot === slot);
+        if (!a) continue;
+        const nx = W - x;
+        // Snap on respawn / long dashes; otherwise guestTick eases toward the target
+        if ((!a.alive && alive) || Math.hypot(nx - a.x, y - a.y) > 120) {
+          a.x = nx;
+          a.y = y;
+        }
+        a._sx = nx;
+        a._sy = y;
+        a.hp = hp;
+        a.maxHp = maxHp;
+        a.alive = !!alive;
+        a.level = lv;
+        a.facingRight = !fr;
+        a.lane = lane;
+        a.respawnAt = respawnAt;
+        SKILL_KEYS.forEach((k, i) => { a.skills[k].cd = cds[i]; });
+        a.items.boots = !!(items & 1);
+        a.items.vial = !!(items & 2);
+        a.items.relic = !!(items & 4);
+        a.buffs.shield = shield;
+      }
+      state.packs = (snap.pk || []).map(([tm, x, y, hp, maxHp, sid, fr, lane]) => ({
+        team: team(tm), x: W - x, y, hp, maxHp, speciesId: sid, facingRight: !fr, lane, alive: true, r: 8,
+      }));
+      if (!mp.structMap) {
+        // Host structure i ↔ guest counterpart (same type / lane / tier, other team)
+        mp.structMap = state.structures.map((st) => state.structures.findIndex(
+          (o) => o.type === st.type && o.lane === st.lane && o.tier === st.tier && o.team !== st.team
+        ));
+      }
+      (snap.st || []).forEach((row, i) => {
+        const st = state.structures[mp.structMap[i]];
+        if (!st) return;
+        st.hp = row[0];
+        st.maxHp = row[1];
+        st.alive = !!row[2];
+        st.unlocked = !!row[3];
+        st.level = row[4];
+        if (row[5]) st.speciesId = row[5];
+      });
+      state.projectiles = (snap.pr || []).map(([tm, x, y, vx, vy, r, color, kind, life, glow]) => ({
+        team: team(tm), x: W - x, y, vx: -vx, vy, r, color, kind, life, glow, trail: [], skill: false,
+      }));
+      for (const [tm, slot, key] of snap.ev || []) {
+        const a = state.axies.find((u) => u.team === team(tm) && u.slot === slot);
+        try {
+          if (a && global.OriginsVfx && global.OriginsVfx.playSkillVfx) {
+            global.OriginsVfx.playSkillVfx(a, key, originsDefender(a, key));
+          }
+        } catch (e) { /* cosmetic */ }
+      }
+      if (snap.end >= 0 && !state.ended) {
+        state.ended = true;
+        state.running = false;
+        state.winner = team(snap.end);
+        if (ui.showEnd) ui.showEnd(state.winner);
+      }
+      if (ui.renderHud) ui.renderHud(state);
+    }
+
+    /** Guest frame: no sim — ease heroes toward the latest snapshot, fly projectiles. */
+    function guestTick(dt) {
+      const k = Math.min(1, dt * 12);
+      for (const a of state.axies) {
+        if (a._sx == null) continue;
+        const dx = a._sx - a.x;
+        a.x += dx * k;
+        a.y += (a._sy - a.y) * k;
+        if (Math.abs(dx) > 0.3) a.facingRight = dx > 0;
+      }
+      for (const p of state.projectiles) {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
+      }
+      state.projectiles = state.projectiles.filter((p) => p.life > 0);
+    }
+
+    function setTimeScale(n) {
+      state.timeScale = Math.max(1, Math.min(8, n | 0));
+    }
+
+    function setZoomLocked(on) {
+      state.zoomLocked = !!on;
+      if (ui.onZoomLock) ui.onZoomLock(state.zoomLocked);
+    }
+
     function update(dt) {
+      if (isGuest()) {
+        guestTick(dt);
+        return;
+      }
       if (!state.running || state.ended) return;
       state.t += dt;
       state.packTimer -= dt;
@@ -2049,14 +2343,15 @@
         if (!a.alive) continue;
         applyItemStats(a);
         updateBuffs(a, dt);
-        if (a.team === 'player' && a.controlled) updateControlled(a, dt);
+        // controlled: local player's pick, or (online host) the guest's pick on 'enemy'
+        if (a.controlled) updateControlled(a, dt);
         else updateHeroAI(a, dt);
       }
       for (const p of living(state.packs)) updatePack(p, dt);
       state.packs = state.packs.filter((p) => p.alive);
 
       // Bot / CPU: occasionally cast when off CD and foe in range (E is self-buff)
-      if (Math.random() < dt * 0.14) {
+      if (!mp.enabled && Math.random() < dt * 0.14) {
         const teamFilter = state.cpuVsCpu
           ? ((a) => a.team === 'enemy' || a.team === 'player')
           : ((a) => a.team === 'enemy');
@@ -2074,18 +2369,9 @@
       }
       if (Math.floor(state.t) % 20 === 0 && state._shopTick !== Math.floor(state.t)) {
         state._shopTick = Math.floor(state.t);
-        enemyShopAI();
+        if (!mp.enabled) enemyShopAI();
         playerShopAI();
       }
-      // CPU demo: cycle camera across blue Axies every ~8s
-      if (state.cpuVsCpu) {
-        const tick = Math.floor(state.t);
-        if (tick > 0 && tick % 8 === 0 && state._cpuCamTick !== tick) {
-          state._cpuCamTick = tick;
-          cycleAxie();
-        }
-      }
-
       state.fx.forEach((f) => {
         f.life -= dt;
         if (f.spark) {
@@ -2137,6 +2423,11 @@
 
     function drawSanctuary(team) {
       const s = sanctuaryPos(team);
+      const art = global.LunaciaStructArt;
+      if (art) {
+        art.drawSanctuary(ctx, s, SANCTUARY_R, team, state.t);
+        return;
+      }
       ctx.beginPath();
       ctx.fillStyle = team === 'player' ? 'rgba(60,140,90,0.35)' : 'rgba(140,70,40,0.35)';
       ctx.arc(s.x, s.y, SANCTUARY_R, 0, Math.PI * 2);
@@ -2151,10 +2442,20 @@
     }
 
     function drawStruct(s) {
+      const art = global.LunaciaStructArt;
+      if (art) {
+        if (s.type === 'nest') art.drawNest(ctx, s, state.t);
+        else if (s.type === 'den') {
+          const img = s.speciesId && spriteReady(s.speciesId) ? spriteCache[s.speciesId] : null;
+          art.drawDen(ctx, s, state.t, img ? { img } : null);
+        } else art.drawSpire(ctx, s, state.t);
+      }
       if (!s.alive) {
         ctx.globalAlpha = 0.25;
       }
-      if (s.type === 'nest') {
+      if (art) {
+        // vector art drawn above; fall through to HP bar
+      } else if (s.type === 'nest') {
         ctx.fillStyle = s.team === 'player' ? '#2f6b3c' : '#7a3a22';
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
@@ -2206,7 +2507,13 @@
         const bw = s.type === 'nest' ? 56 : (s.type === 'den' ? 44 : 40);
         const bh = 6;
         const bx = s.x - bw / 2;
-        const by = s.y - s.r - 20;
+        let by = s.y - s.r - 20;
+        if (global.LunaciaStructArt) {
+          // clear the taller vector art (crystal / emblem / barrier dome)
+          if (s.type === 'spire') by = s.y - (s.tier === 2 ? 96 : 80);
+          else if (s.type === 'den') by = s.y - 44;
+          else by = s.y - 60;
+        }
         const locked = s.type === 'nest' && !s.unlocked;
         ctx.fillStyle = '#0a0c10';
         ctx.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
@@ -2215,7 +2522,7 @@
         const ratio = Math.max(0, s.hp / s.maxHp);
         ctx.fillStyle = locked ? '#6a7180' : (s.team === 'player' ? '#5ad48a' : '#e08050');
         ctx.fillRect(bx, by, bw * ratio, bh);
-        if (locked) {
+        if (locked && !global.LunaciaStructArt) {
           ctx.fillStyle = '#9aa3b2';
           ctx.font = '8px sans-serif';
           ctx.textAlign = 'center';
@@ -2420,12 +2727,19 @@
     }
 
     function render() {
+      ctx.setTransform(RES, 0, 0, RES, 0, 0);
       ctx.clearRect(0, 0, W, H);
       ctx.save();
       // Camera: scale around screen center, focus on cam (x,y)
       ctx.translate(W / 2, H / 2);
       ctx.scale(state.cam.zoom, state.cam.zoom);
       ctx.translate(-state.cam.x, -state.cam.y);
+
+      // Off-map void (visible only when the zoomed camera overshoots an edge)
+      if (state.cam.zoom > ZOOM_OUT + 0.01) {
+        ctx.fillStyle = '#0d1610';
+        ctx.fillRect(-W, -H, W * 3, H * 3);
+      }
 
       // background: Tiled tilemap (primary) → painted plate fallback → procedural
       if (tilemapReady()) {
@@ -2460,7 +2774,7 @@
       drawSanctuary('player');
       drawSanctuary('enemy');
 
-      state.structures.forEach(drawStruct);
+      state.structures.slice().sort((a, b) => a.y - b.y).forEach(drawStruct);
       // Enemy units outside vision are not drawn (terrain/structures show dimly through fog)
       const visions = visionSources();
       const seen = (x, y) => {
@@ -2590,29 +2904,69 @@
 
       // Fog only while zoomed in. Wide framing keeps both Nests and Packs readable.
       if (!wideBoard) drawFogOfWar(visions);
+      if (state.cam.zoom > ZOOM_OUT + 0.01) {
+        // Soft canopy edge where the map meets the off-map void
+        ctx.save();
+        ctx.strokeStyle = 'rgba(6, 12, 8, 0.55)';
+        ctx.lineWidth = 18;
+        ctx.strokeRect(-9, -9, W + 18, H + 18);
+        ctx.strokeStyle = 'rgba(6, 12, 8, 0.25)';
+        ctx.lineWidth = 10;
+        ctx.strokeRect(5, 5, W - 10, H - 10);
+        ctx.restore();
+      }
 
       // Lane tags sized in screen px so they survive a ~0.43× thumbnail.
       const lanePx = Math.max(14, Math.round(26 / Math.max(state.cam.zoom, 0.01)));
-      ctx.fillStyle = 'rgba(232, 240, 232, 0.92)';
+      // Sit on the lane's lower edge so they never cover heroes fighting mid-lane
+      ctx.fillStyle = 'rgba(232, 240, 232, 0.55)';
       ctx.font = `800 ${lanePx}px sans-serif`;
       ctx.textAlign = 'center';
-      ctx.fillText('TOP', W / 2, LANE_Y.top - 28);
-      ctx.fillText('MID', W / 2, LANE_Y.mid - 28);
-      ctx.fillText('BOT', W / 2, LANE_Y.bot - 28);
+      ctx.textBaseline = 'middle';
+      ['top', 'mid', 'bot'].forEach((lane) => {
+        ctx.fillText(lane.toUpperCase(), W / 2, LANE_Y[lane] + 40);
+      });
+      ctx.textBaseline = 'alphabetic';
 
       ctx.restore();
     }
 
-    function loop(ts) {
+    function step(ts) {
       if (!state._last) state._last = ts;
       let dt = (ts - state._last) / 1000;
       state._last = ts;
       dt = Math.min(0.05, dt);
-      update(dt);
+      // timeScale > 1 fast-forwards the sim (capture / spectator montage)
+      const n = Math.max(1, Math.min(8, state.timeScale | 0));
+      for (let i = 0; i < n; i++) update(dt);
       updateCamera(dt);
       render();
+    }
+    function loop() {
+      if (!state.manualClock) step(performance.now());
       requestAnimationFrame(loop);
     }
+    /** Offline capture: caller owns the clock and advances one frame at a time. */
+    function advance(dt) {
+      state.manualClock = true;
+      const n = Math.max(1, Math.min(8, state.timeScale | 0));
+      for (let i = 0; i < n; i++) update(dt);
+      updateCamera(dt);
+      render();
+    }
+    // rAF stalls in hidden / occluded tabs (screen recorders, background capture).
+    // Keep the sim ticking at ~30fps until rAF resumes.
+    // Hidden tabs throttle timers to ~1Hz, so catch up in 50ms sub-steps (max 1s).
+    setInterval(() => {
+      const now = performance.now();
+      if (state.manualClock) return;
+      if (state._last && now - state._last <= 120) return;
+      const from = state._last || now - 50;
+      const end = Math.min(now, from + 1000);
+      state._last = from;
+      for (let t = from + 50; t <= end; t += 50) step(t);
+      state._last = now;
+    }, 33);
 
     /** Nearest living Den or Spire under cursor (Nest ignored). */
     function hitTestClickableStruct(wx, wy) {
@@ -2656,6 +3010,7 @@
       if (!ax || !ax.alive) return;
       ax.targetX = clamp(world.x, 20, W - 20);
       ax.targetY = clamp(world.y, 20, H - 20);
+      if (isGuest()) sendCmd({ t: 'move', x: Math.round(ax.targetX), y: Math.round(ax.targetY) });
     }
 
     function onKey(ev) {
@@ -2677,6 +3032,7 @@
       if (k === '1') selectAxie(0);
       if (k === '2') selectAxie(1);
       if (k === '3') selectAxie(2);
+      if ((k === 'f' || k === 'F') && !ev.metaKey && !ev.ctrlKey) setZoomLocked(!state.zoomLocked);
       // CPU vs CPU: camera select only — no human skills / lane swaps
       if (state.cpuVsCpu) return;
       const ax = selected();
@@ -2735,6 +3091,13 @@
       startLaneChannel,
       selected,
       setZoomOutHeld,
+      setZoomLocked,
+      setTimeScale,
+      advance,
+      setMultiplayer,
+      applyRemoteCmd,
+      getSnapshot,
+      applySnapshot,
       denUpgradeCost,
       denFor,
       spireFor,
@@ -2760,6 +3123,7 @@
       LEVEL_BONUS,
       ZOOM_IN,
       ZOOM_OUT,
+      RES,
       FOG_VISION_AXIE,
       FOG_VISION_PACK,
       FOG_VISION_SPIRE,

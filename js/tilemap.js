@@ -150,6 +150,160 @@
     return drawn;
   }
 
+
+  // ---------------------------------------------------------------- Forest
+  // The Forest layer mixes fragments of multi-tile trees, which reads as noise.
+  // Instead: find each forest block (connected cells), paint a dark undergrowth
+  // mass, then scatter whole single-tile tree sprites (bottom row of trees.png)
+  // at 2×, depth-sorted, with a fixed seed so the map is identical every load.
+  const FOREST_LAYER = 'forest';
+  const TREE_SCALE = 3;
+
+  function mulberry32(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /** Bounding boxes (in px) of 4-connected non-empty cells in a layer. */
+  function forestBlocks(map, layer) {
+    const w = map.width;
+    const h = map.height;
+    const data = layer.data || [];
+    const seen = new Uint8Array(w * h);
+    const blocks = [];
+    for (let i = 0; i < w * h; i++) {
+      if (!data[i] || seen[i]) continue;
+      let x0 = w, y0 = h, x1 = 0, y1 = 0, n = 0;
+      const stack = [i];
+      seen[i] = 1;
+      while (stack.length) {
+        const k = stack.pop();
+        const cx = k % w;
+        const cy = (k / w) | 0;
+        n++;
+        if (cx < x0) x0 = cx;
+        if (cy < y0) y0 = cy;
+        if (cx > x1) x1 = cx;
+        if (cy > y1) y1 = cy;
+        // 8-connected so the sparse authored blocks join into one mass
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = cx + dx;
+            const ny = cy + dy;
+            if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+            const j = ny * w + nx;
+            if (data[j] && !seen[j]) {
+              seen[j] = 1;
+              stack.push(j);
+            }
+          }
+        }
+      }
+      if (n < 4) continue;
+      const tw = map.tilewidth;
+      const th = map.tileheight;
+      blocks.push({ x: x0 * tw, y: y0 * th, w: (x1 - x0 + 1) * tw, h: (y1 - y0 + 1) * th });
+    }
+    return blocks;
+  }
+
+  /** Whole-tree sprites: the bottom row of the trees sheet (each a complete 16×16 tree). */
+  function treeSprites(treesTs) {
+    const img = treesTs._img;
+    const tw = treesTs.tilewidth || 16;
+    const th = treesTs.tileheight || 16;
+    const cols = treesTs.columns | 0;
+    const rows = Math.floor((treesTs.imageheight || img.height) / th);
+    const out = [];
+    for (let c = 0; c < cols; c++) {
+      const sx = c * tw;
+      const sy = (rows - 1) * th;
+      if (!tileIsEmpty(img, sx, sy, tw, th)) out.push({ sx, sy, tw, th });
+    }
+    return out;
+  }
+
+  function blobRect(ctx, b, pad, rand) {
+    // Rounded mass with a lumpy edge so blocks don't read as rectangles
+    const r = Math.min(34, b.h / 2.4);
+    ctx.beginPath();
+    ctx.roundRect(b.x - pad, b.y - pad, b.w + pad * 2, b.h + pad * 2, r);
+    ctx.fill();
+    const step = 14;
+    for (let x = b.x; x <= b.x + b.w; x += step) {
+      const j = rand() * 5;
+      ctx.beginPath();
+      ctx.arc(x, b.y - pad + 2, 7 + j, 0, Math.PI * 2);
+      ctx.arc(x + 7, b.y + b.h + pad - 2, 7 + rand() * 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function paintForest(ctx, map, layer, treesTs) {
+    const blocks = forestBlocks(map, layer);
+    const sprites = treeSprites(treesTs);
+    if (!blocks.length || !sprites.length) return 0;
+    const rand = mulberry32(0x4c52);
+    let placed = 0;
+    for (const b of blocks) {
+      // soft outer shadow, then undergrowth
+      ctx.fillStyle = 'rgba(20, 40, 18, 0.35)';
+      blobRect(ctx, b, 6, rand);
+      ctx.fillStyle = '#2c5a2a';
+      blobRect(ctx, b, 0, rand);
+      ctx.fillStyle = '#244b23';
+      ctx.beginPath();
+      ctx.roundRect(b.x + 8, b.y + 8, b.w - 16, b.h - 16, Math.min(26, b.h / 3));
+      ctx.fill();
+
+      // jittered grid of tree base points, painted back-to-front
+      const size = 16 * TREE_SCALE;
+      const gx = 22;
+      const gy = 17;
+      const cx = b.x + b.w / 2;
+      const cy = b.y + b.h / 2;
+      const hw = b.w / 2 + 4;
+      const hh = b.h / 2 + 10;
+      const pts = [];
+      for (let y = b.y + 14; y <= b.y + b.h + 8; y += gy) {
+        const rowOff = (((y - b.y) / gy) | 0) % 2 ? gx / 2 : 0;
+        for (let x = b.x + 6 + rowOff; x <= b.x + b.w - 6; x += gx) {
+          // superellipse mask with a ragged edge → organic grove outline
+          const ex = Math.abs(x - cx) / hw;
+          const ey = Math.abs(y - 12 - cy) / hh;
+          if (Math.pow(ex, 4) + Math.pow(ey, 4) > 0.82 + rand() * 0.3) continue;
+          pts.push({
+            x: x + (rand() - 0.5) * 10,
+            y: y + (rand() - 0.5) * 8,
+            s: sprites[(rand() * sprites.length) | 0],
+            flip: rand() < 0.5,
+          });
+        }
+      }
+      pts.sort((a, c) => a.y - c.y);
+      for (const p of pts) {
+        // contact shadow
+        ctx.fillStyle = 'rgba(10, 24, 10, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, size * 0.32, size * 0.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.save();
+        ctx.translate(Math.round(p.x), Math.round(p.y));
+        if (p.flip) ctx.scale(-1, 1);
+        ctx.drawImage(treesTs._img, p.s.sx, p.s.sy, p.s.tw, p.s.th, -size / 2, -size + 2, size, size);
+        ctx.restore();
+        placed++;
+      }
+    }
+    return placed;
+  }
+
   async function bakeFromPng(pngUrl) {
     const img = await loadImage(pngUrl);
     const canvas = document.createElement('canvas');
@@ -218,6 +372,7 @@
 
     let totalDrawn = 0;
     let layersUsed = 0;
+    const forestLayers = [];
 
     for (let li = 0; li < map.layers.length; li++) {
       const layer = map.layers[li];
@@ -225,10 +380,28 @@
       if (layer.visible === false) continue;
       if (SKIP_LAYERS.has(layer.name)) continue;
 
+      if (String(layer.name).toLowerCase() === FOREST_LAYER) {
+        const treesTs = sorted.find((ts) => String(ts.name || ts.image).toLowerCase().includes('tree'));
+        if (treesTs && treesTs._img) {
+          forestLayers.push({ layer, treesTs });
+          continue;
+        }
+      }
       const n = bakeTileLayerMulti(map, sorted, layer, ctx);
       if (n > 0) {
         totalDrawn += n;
         layersUsed++;
+      }
+    }
+
+    // Forest last so canopies overlap paths / grass edges
+    for (const f of forestLayers) {
+      const n = paintForest(ctx, map, f.layer, f.treesTs);
+      if (n > 0) {
+        totalDrawn += n;
+        layersUsed++;
+      } else {
+        totalDrawn += bakeTileLayerMulti(map, sorted, f.layer, ctx);
       }
     }
 
